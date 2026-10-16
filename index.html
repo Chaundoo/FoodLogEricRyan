@@ -1,2260 +1,891 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>Ryan & Eric Food Log</title>
-  <!-- Tailwind CSS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ryan & Eric — Macro & Food Vault</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Plus Jakarta Sans / Inter for friendly app feel -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-
   <style>
-    html, body {
-      max-width: 100%;
-      overflow-x: hidden;
-      background-color: #0f172a;
-      color: #f8fafc;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Friendly Kiosk Card */
-    .kiosk-card {
-      background: #1e293b;
-      border: 2px solid #334155;
-      box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.45);
-    }
-
-    /* Tactile 3D-style button press */
-    .tap-btn {
-      transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
-    }
-    .tap-btn:active {
-      transform: scale(0.96);
-    }
-
-    /* Hide spin buttons on number inputs */
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button {
-      -webkit-appearance: none;
-      margin: 0;
-    }
-    input[type=number] {
-      -moz-appearance: textfield;
-    }
-
-    input[type="date"]::-webkit-calendar-picker-indicator {
-      filter: invert(1) brightness(0.9);
-      cursor: pointer;
-    }
-
-    /* Hide scrollbar for category pills */
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-
-    @keyframes shakeError {
-      0%, 100% { transform: translateX(0); }
-      20%, 60% { transform: translateX(-8px); }
-      40%, 80% { transform: translateX(8px); }
-    }
-    .animate-shake {
-      animation: shakeError 0.35s ease-in-out;
-    }
-
-    @keyframes popIn {
-      0% { opacity: 0; transform: scale(0.95) translateY(8px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .modal-pop {
-      animation: popIn 0.18s ease-out forwards;
-    }
+    body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col font-sans antialiased pb-20">
+<body class="min-h-screen pb-16">
 
-  <!-- ======================================================== -->
-  <!-- 1. SIMPLE PASSCODE LOCK SCREEN (PIN: 4582)               -->
-  <!-- ======================================================== -->
-  <div id="passcodeOverlay" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-4 select-none">
-    <div id="passcodeBox" class="kiosk-card w-full max-w-sm rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center">
-      <div class="w-16 h-16 rounded-2xl bg-sky-500/20 border-2 border-sky-400/40 flex items-center justify-center text-3xl mb-3">
-        🔐
-      </div>
-      <h1 class="text-xl font-extrabold text-white">Ryan &amp; Eric's Food Log</h1>
-      <p class="text-sm text-slate-400 mt-1">Enter your 4-digit code to open</p>
-
-      <!-- 4 PIN Dots -->
-      <div id="pinDots" class="flex items-center justify-center gap-4 my-5">
-        <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-500 bg-slate-900 transition-all"></div>
-        <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-500 bg-slate-900 transition-all"></div>
-        <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-500 bg-slate-900 transition-all"></div>
-        <div class="pin-dot w-4 h-4 rounded-full border-2 border-slate-500 bg-slate-900 transition-all"></div>
-      </div>
-
-      <p id="pinError" class="text-xs font-bold text-rose-400 h-4 mb-2 opacity-0 transition-opacity">
-        Oops, wrong code! Try again.
-      </p>
-
-      <!-- Big Friendly Keypad -->
-      <div class="grid grid-cols-3 gap-2.5 w-full max-w-[260px]">
-        <button type="button" onclick="pressPin('1')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">1</button>
-        <button type="button" onclick="pressPin('2')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">2</button>
-        <button type="button" onclick="pressPin('3')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">3</button>
-        <button type="button" onclick="pressPin('4')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">4</button>
-        <button type="button" onclick="pressPin('5')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">5</button>
-        <button type="button" onclick="pressPin('6')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">6</button>
-        <button type="button" onclick="pressPin('7')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">7</button>
-        <button type="button" onclick="pressPin('8')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">8</button>
-        <button type="button" onclick="pressPin('9')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">9</button>
-        <button type="button" onclick="clearPin()" class="tap-btn h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-xs font-extrabold text-slate-400 border border-slate-800">CLEAR</button>
-        <button type="button" onclick="pressPin('0')" class="tap-btn h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-xl font-extrabold text-white border border-slate-700">0</button>
-        <button type="button" onclick="backspacePin()" class="tap-btn h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-base text-slate-300 border border-slate-800 flex items-center justify-center">
-          <i class="fa-solid fa-delete-left"></i>
-        </button>
-      </div>
-
-      <label class="mt-5 inline-flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-slate-300">
-        <input type="checkbox" id="rememberPinBox" checked class="w-4 h-4 rounded bg-slate-900 border-slate-600 text-sky-500" />
-        <span>Keep me unlocked on this phone/browser</span>
-      </label>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div id="toastBox" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-md pointer-events-none flex flex-col gap-2"></div>
-
-  <!-- ======================================================== -->
-  <!-- 2. TOP BAR: BROTHER SWITCHER, DATE & BACKUP BUTTON       -->
-  <!-- ======================================================== -->
-  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-3 py-3 sm:px-5">
-    <div class="max-w-xl mx-auto space-y-2.5">
-      <!-- Top Row: Title + Backup + Lock -->
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">💪</span>
-          <h1 class="font-extrabold text-base sm:text-lg text-white tracking-tight">Ryan &amp; Eric Food Log</h1>
-        </div>
-
-        <div class="flex items-center gap-1.5">
-          <button
-            type="button"
-            onclick="openBackupModal()"
-            class="tap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-xs font-extrabold flex items-center gap-1.5"
-          >
-            <span>💾 Backup</span>
-          </button>
-          <button
-            type="button"
-            onclick="lockApp()"
-            class="tap-btn w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700 flex items-center justify-center"
-            title="Lock screen"
-          >
-            🔒
-          </button>
-        </div>
-      </div>
-
-      <!-- BIG 2-WAY BROTHER SWITCHER -->
-      <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800">
-        <button
-          type="button"
-          id="btnTabRyan"
-          onclick="switchBrother('ryan')"
-          class="tap-btn py-3 px-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all"
-        >
-          <span>🧑🏻 Ryan</span>
-          <span id="topWeightRyan" class="text-xs font-bold opacity-85">(154 lbs)</span>
-        </button>
-
-        <button
-          type="button"
-          id="btnTabEric"
-          onclick="switchBrother('eric')"
-          class="tap-btn py-3 px-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 transition-all"
-        >
-          <span>👦🏻 Eric</span>
-          <span id="topWeightEric" class="text-xs font-bold opacity-85">(151 lbs)</span>
-        </button>
-      </div>
-
-      <!-- Simple Date Bar (◀ Today ▶) -->
-      <div class="flex items-center justify-between bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800/90">
-        <button type="button" onclick="changeDay(-1)" class="tap-btn px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold">
-          ◀ Prev
-        </button>
-
-        <div class="flex items-center gap-2">
-          <span id="dateFriendlyLabel" class="text-xs font-extrabold text-sky-400">Today</span>
-          <input
-            type="date"
-            id="dateInput"
-            onchange="setDay(this.value)"
-            class="bg-transparent text-slate-300 text-xs font-bold cursor-pointer focus:outline-none"
-          />
-          <button
-            type="button"
-            id="todayJumpBtn"
-            onclick="goToToday()"
-            class="hidden px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[11px] font-extrabold"
-          >
-            Back to Today
-          </button>
-        </div>
-
-        <button type="button" onclick="changeDay(1)" class="tap-btn px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold">
-          Next ▶
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- ======================================================== -->
-  <!-- MAIN CONTENT (3 FRIENDLY CARDS)                          -->
-  <!-- ======================================================== -->
-  <main class="flex-1 w-full max-w-xl mx-auto px-3 sm:px-5 pt-4 space-y-5">
-
-    <!-- ====================================================== -->
-    <!-- CARD 1: TODAY'S PROGRESS (SIMPLE & ENCOURAGING)        -->
-    <!-- ====================================================== -->
-    <section id="progressCard" class="kiosk-card rounded-3xl p-4 sm:p-5 space-y-4 transition-colors">
-
-      <!-- Weight & Goal Mode Row -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-700/70">
-        <!-- Weight [ - ] 154 lbs [ + ] -->
-        <div class="flex items-center justify-between sm:justify-start gap-3">
-          <span id="brotherWeightTitle" class="text-xs font-extrabold uppercase tracking-wide text-sky-400">
-            Ryan's Weight:
-          </span>
-          <div class="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-700">
-            <button type="button" onclick="adjustWeight(-0.5)" class="tap-btn w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-base flex items-center justify-center">−</button>
-            <input
-              type="number"
-              id="weightInput"
-              step="0.5"
-              onchange="updateWeightInput(this.value)"
-              class="w-14 bg-transparent text-white font-extrabold text-base text-center focus:outline-none"
-            />
-            <span class="text-xs font-bold text-slate-400 pr-1">lbs</span>
-            <button type="button" onclick="adjustWeight(0.5)" class="tap-btn w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-base flex items-center justify-center">+</button>
-          </div>
-        </div>
-
-        <!-- Goal Toggle Pill: Bulk vs Cut -->
-        <div class="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button
-            type="button"
-            id="btnModeBulk"
-            onclick="setPhase('bulk')"
-            class="tap-btn px-2.5 py-1.5 rounded-lg text-xs font-extrabold transition"
-          >
-            💪 Bulk (Muscle)
-          </button>
-          <button
-            type="button"
-            id="btnModeCut"
-            onclick="setPhase('cut')"
-            class="tap-btn px-2.5 py-1.5 rounded-lg text-xs font-extrabold transition"
-          >
-            ⚡ Cut (Shred)
-          </button>
-        </div>
-      </div>
-
-      <!-- Big Calorie Headline -->
-      <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-700/70 space-y-2.5">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <span class="text-xs font-extrabold uppercase tracking-wide text-amber-400 block">🔥 Today's Calories</span>
-            <div class="flex items-baseline gap-1.5 mt-0.5">
-              <span id="calEatenText" class="text-3xl sm:text-4xl font-extrabold text-white">0</span>
-              <span id="calGoalText" class="text-sm sm:text-base font-bold text-slate-400">/ 2,772 Cal</span>
-            </div>
-          </div>
-
-          <div id="calStatusBadge" class="px-3.5 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-extrabold text-sm sm:text-base">
-            2,772 Cal left to eat!
-          </div>
-        </div>
-
-        <!-- Big Smooth Progress Bar -->
-        <div class="w-full h-4 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
-          <div id="calBarFill" class="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-300" style="width: 0%"></div>
-        </div>
-      </div>
-
-      <!-- 3 Friendly Progress Bars: Protein, Carbs, Fat -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        <!-- Protein (Muscle) -->
-        <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-rose-500/30 space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-extrabold text-rose-400">🥩 Protein <span class="text-slate-400 font-semibold">(Muscle)</span></span>
-          </div>
-          <div class="flex items-baseline justify-between">
-            <div>
-              <span id="proEatenText" class="text-xl font-extrabold text-white">0g</span>
-              <span id="proGoalText" class="text-xs font-bold text-slate-400">/ 169g</span>
-            </div>
-            <span id="proLeftBadge" class="text-xs font-extrabold text-rose-300">169g left</span>
-          </div>
-          <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden">
-            <div id="proBarFill" class="h-full bg-rose-500 rounded-full transition-all duration-300" style="width: 0%"></div>
-          </div>
-        </div>
-
-        <!-- Carbs (Energy) -->
-        <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-sky-500/30 space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-extrabold text-sky-400">🍚 Carbs <span class="text-slate-400 font-semibold">(Energy)</span></span>
-          </div>
-          <div class="flex items-baseline justify-between">
-            <div>
-              <span id="carbEatenText" class="text-xl font-extrabold text-white">0g</span>
-              <span id="carbGoalText" class="text-xs font-bold text-slate-400">/ 370g</span>
-            </div>
-            <span id="carbLeftBadge" class="text-xs font-extrabold text-sky-300">370g left</span>
-          </div>
-          <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden">
-            <div id="carbBarFill" class="h-full bg-sky-400 rounded-full transition-all duration-300" style="width: 0%"></div>
-          </div>
-        </div>
-
-        <!-- Fat (Health) -->
-        <div class="bg-slate-900/90 p-3.5 rounded-2xl border border-purple-500/30 space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-extrabold text-purple-400">🥑 Fat <span class="text-slate-400 font-semibold">(Health)</span></span>
-          </div>
-          <div class="flex items-baseline justify-between">
-            <div>
-              <span id="fatEatenText" class="text-xl font-extrabold text-white">0g</span>
-              <span id="fatGoalText" class="text-xs font-bold text-slate-400">/ 69g</span>
-            </div>
-            <span id="fatLeftBadge" class="text-xs font-extrabold text-purple-300">69g left</span>
-          </div>
-          <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden">
-            <div id="fatBarFill" class="h-full bg-purple-400 rounded-full transition-all duration-300" style="width: 0%"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ====================================================== -->
-    <!-- CARD 2: TAP A FOOD TO EAT (KIOSK STYLE)                -->
-    <!-- ====================================================== -->
-    <section class="kiosk-card rounded-3xl p-4 sm:p-5 space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <div>
-          <h2 class="text-base sm:text-lg font-extrabold text-white">🍽️ Tap a Food to Eat</h2>
-          <p class="text-xs text-slate-400">Pick any food below to choose your portion &amp; log it</p>
-        </div>
-
-        <button
-          type="button"
-          onclick="openCustomFoodModal()"
-          class="tap-btn px-3 py-2 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-xs font-extrabold flex items-center gap-1"
-        >
-          <span>➕ Custom Food</span>
-        </button>
-      </div>
-
-      <!-- Single Unified Search Bar -->
-      <div class="space-y-2">
-        <div class="relative">
-          <input
-            type="text"
-            id="foodSearchInput"
-            oninput="handleSearchInput(this.value)"
-            placeholder="🔍 Search anything (double double, canes, costco chicken...)"
-            class="w-full bg-slate-900 text-white text-sm font-bold pl-4 pr-10 py-3.5 rounded-2xl border-2 border-slate-700 focus:outline-none focus:border-sky-400 placeholder-slate-400"
-          />
-          <button
-            type="button"
-            id="clearSearchBtn"
-            onclick="clearSearch()"
-            class="hidden absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs items-center justify-center"
-          >
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <!-- Quick Try Chips & Smart Match Counter -->
-        <div class="flex items-center justify-between gap-2 flex-wrap">
-          <div id="quickTryChips" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-            <span class="text-[11px] font-extrabold text-slate-400 shrink-0">🔥 Try:</span>
-            <button type="button" onclick="applyQuickSearch('double double')" class="tap-btn px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 text-[11px] font-bold shrink-0">double double</button>
-            <button type="button" onclick="applyQuickSearch('costco chicken')" class="tap-btn px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 text-[11px] font-bold shrink-0">costco chicken</button>
-            <button type="button" onclick="applyQuickSearch('canes')" class="tap-btn px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 text-[11px] font-bold shrink-0">canes</button>
-            <button type="button" onclick="applyQuickSearch('cfa')" class="tap-btn px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 text-[11px] font-bold shrink-0">cfa</button>
-            <button type="button" onclick="applyQuickSearch('chipotle bowl')" class="tap-btn px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 text-[11px] font-bold shrink-0">chipotle bowl</button>
-            <button type="button" onclick="applyQuickSearch('fairlife')" class="tap-btn px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700/80 text-[11px] font-bold shrink-0">fairlife</button>
-          </div>
-          <span id="smartSearchBadge" class="hidden text-[11px] font-extrabold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full"></span>
-        </div>
-      </div>
-
-      <!-- Simple Category Pills -->
-      <div id="categoryPillsRow" class="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-        <button type="button" onclick="setCategory('favorites')" id="cat_favorites" class="tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap">
-          ⭐ Favorites
-        </button>
-        <button type="button" onclick="setCategory('costco_meats')" id="cat_costco_meats" class="tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap">
-          🍗 Costco &amp; Meats
-        </button>
-        <button type="button" onclick="setCategory('carbs_sides')" id="cat_carbs_sides" class="tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap">
-          🍚 Carbs &amp; Sides
-        </button>
-        <button type="button" onclick="setCategory('fast_food')" id="cat_fast_food" class="tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap">
-          🍔 Fast Food
-        </button>
-        <button type="button" onclick="setCategory('snacks_drinks')" id="cat_snacks_drinks" class="tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap">
-          🥤 Snacks &amp; Drinks
-        </button>
-      </div>
-
-      <!-- Visual Food Grid (2 or 3 columns of friendly tap cards) -->
-      <div id="foodGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto pr-0.5">
-        <!-- Populated by JS -->
-      </div>
-
-      <!-- Automatic Online Search Results Section (Only appears when typing) -->
-      <div id="onlineSearchSection" class="hidden pt-3 border-t border-slate-700/80 space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span id="onlineSearchStatus" class="text-xs font-extrabold text-sky-300 flex items-center gap-2">
-            <i class="fa-solid fa-spinner fa-spin"></i>
-            <span>Searching more foods online...</span>
-          </span>
-          <span class="text-[11px] text-slate-400">Tap to log • ⭐ to keep</span>
-        </div>
-        <div id="onlineFoodGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-0.5"></div>
-      </div>
-    </section>
-
-    <!-- ====================================================== -->
-    <!-- CARD 3: TODAY'S MEALS (CLEAN LIST)                     -->
-    <!-- ====================================================== -->
-    <section class="kiosk-card rounded-3xl p-4 sm:p-5 space-y-4">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2">
-          <h2 class="text-base sm:text-lg font-extrabold text-white">📋 Today's Meals</h2>
-          <span id="mealCountBadge" class="px-2.5 py-0.5 rounded-full bg-slate-800 text-sky-400 text-xs font-extrabold">0</span>
-        </div>
-
-        <button
-          type="button"
-          onclick="copyYesterdayMeals()"
-          class="tap-btn px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-extrabold"
-        >
-          📋 Copy Yesterday
-        </button>
-      </div>
-
-      <div id="mealsListContainer" class="space-y-2.5">
-        <!-- Populated by JS -->
-      </div>
-    </section>
-
-    <!-- ====================================================== -->
-    <!-- BROTHER SIDE-BY-SIDE CHECK-IN                          -->
-    <!-- ====================================================== -->
-    <section class="kiosk-card rounded-3xl p-4 sm:p-5 space-y-3">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm sm:text-base font-extrabold text-white">🤜🤛 Brother Check-In (Today)</h2>
-        <span class="text-xs text-slate-400">Tap a card to switch</span>
-      </div>
-      <div id="brotherComparisonGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-    </section>
-
-  </main>
-
-  <!-- ======================================================== -->
-  <!-- MODAL 1: FRIENDLY PORTION PICKER (OPENS ON FOOD TAP)     -->
-  <!-- ======================================================== -->
-  <div id="portionModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
-    <div class="kiosk-card modal-pop w-full max-w-md rounded-3xl p-5 sm:p-6 border-2 border-slate-700 space-y-4">
-      <!-- Food Title & Close -->
-      <div class="flex items-start justify-between gap-2">
-        <div class="flex items-center gap-3">
-          <div id="pmEmoji" class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shrink-0">
-            🌯
-          </div>
-          <div>
-            <h3 id="pmTitle" class="text-base sm:text-lg font-extrabold text-white leading-snug">Costco Chipotle Chicken</h3>
-            <p id="pmHint" class="text-xs font-semibold text-sky-400 mt-0.5">1 breast portion ≈ 200g</p>
-          </div>
-        </div>
-
-        <button type="button" onclick="closePortionModal()" class="tap-btn w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center shrink-0">
-          <i class="fa-solid fa-xmark text-base"></i>
-        </button>
-      </div>
-
-      <!-- Natural Unit Buttons (e.g., 1x, 2x, 3x, 4x if applicable) -->
-      <div id="pmUnitRow" class="hidden space-y-1.5">
-        <span id="pmUnitLabel" class="text-xs font-extrabold uppercase tracking-wider text-emerald-400 block">Quick Count</span>
-        <div id="pmUnitButtons" class="grid grid-cols-4 gap-2"></div>
-      </div>
-
-      <!-- Easy Portion Size Buttons (Small, Medium, Large, XL) -->
-      <div class="space-y-1.5">
-        <span class="text-xs font-extrabold uppercase tracking-wider text-slate-400 block">Quick Portion Size</span>
-        <div class="grid grid-cols-4 gap-2">
-          <button type="button" onclick="setPortionGrams(100)" id="qBtn100" class="tap-btn py-2.5 px-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-center">
-            <span class="block text-xs font-extrabold text-white">Small</span>
-            <span class="block text-[11px] font-bold text-slate-400">100g</span>
-          </button>
-          <button type="button" onclick="setPortionGrams(150)" id="qBtn150" class="tap-btn py-2.5 px-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-center">
-            <span class="block text-xs font-extrabold text-white">Medium</span>
-            <span class="block text-[11px] font-bold text-slate-400">150g</span>
-          </button>
-          <button type="button" onclick="setPortionGrams(200)" id="qBtn200" class="tap-btn py-2.5 px-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-center">
-            <span class="block text-xs font-extrabold text-white">Large</span>
-            <span class="block text-[11px] font-bold text-slate-400">200g</span>
-          </button>
-          <button type="button" onclick="setPortionGrams(300)" id="qBtn300" class="tap-btn py-2.5 px-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-center">
-            <span class="block text-xs font-extrabold text-white">XL</span>
-            <span class="block text-[11px] font-bold text-slate-400">300g</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Exact Gram Input (for Food Scale) -->
-      <div class="bg-slate-900 p-3.5 rounded-2xl border border-slate-700/80 space-y-2">
-        <label class="block text-xs font-extrabold text-center text-slate-300">
-          ⚖️ Or type exact grams from your food scale:
-        </label>
-        <div class="flex items-center justify-center gap-2">
-          <button type="button" onclick="stepPortionGrams(-25)" class="tap-btn px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs border border-slate-700">
-            −25g
-          </button>
-          <div class="flex items-center bg-slate-950 px-4 py-2 rounded-2xl border-2 border-emerald-500/60 w-36">
-            <input
-              type="number"
-              id="pmGramsInput"
-              value="200"
-              min="1"
-              oninput="updatePortionPreview()"
-              class="w-full bg-transparent text-white font-extrabold text-xl text-center focus:outline-none"
-            />
-            <span class="text-xs font-extrabold text-emerald-400 ml-1">g</span>
-          </div>
-          <button type="button" onclick="stepPortionGrams(25)" class="tap-btn px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs border border-slate-700">
-            +25g
-          </button>
-        </div>
-      </div>
-
-      <!-- Live Nutrition Preview Pills -->
-      <div class="grid grid-cols-4 gap-2 bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
-        <div>
-          <span class="text-[10px] font-extrabold uppercase text-amber-400 block">Calories</span>
-          <span id="pmCal" class="text-base sm:text-lg font-extrabold text-white">+320</span>
-        </div>
-        <div>
-          <span class="text-[10px] font-extrabold uppercase text-rose-400 block">Protein</span>
-          <span id="pmPro" class="text-base sm:text-lg font-extrabold text-rose-300">+50g</span>
-        </div>
-        <div>
-          <span class="text-[10px] font-extrabold uppercase text-sky-400 block">Carbs</span>
-          <span id="pmCarb" class="text-base sm:text-lg font-extrabold text-sky-300">+8g</span>
-        </div>
-        <div>
-          <span class="text-[10px] font-extrabold uppercase text-purple-400 block">Fat</span>
-          <span id="pmFat" class="text-base sm:text-lg font-extrabold text-purple-300">+9g</span>
-        </div>
-      </div>
-
-      <!-- Big Confirm Button -->
-      <button
-        type="button"
-        id="pmConfirmBtn"
-        onclick="confirmPortionAndLog()"
-        class="tap-btn w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-sky-500 hover:from-emerald-400 hover:to-sky-400 text-slate-950 font-extrabold text-base shadow-lg flex items-center justify-center gap-2"
-      >
-        <span>✅ Add to Today's Log</span>
+  <!-- LOCK SCREEN -->
+  <div id="lockScreen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6">
+    <div class="glass p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-slate-800">
+      <div class="text-5xl mb-3">🔒</div>
+      <h1 class="text-2xl font-bold mb-1">Ryan & Eric's Vault</h1>
+      <p class="text-slate-400 text-sm mb-6">Enter 4-digit passcode to unlock food log</p>
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+        class="w-full text-center text-3xl tracking-[0.6em] font-bold bg-slate-900 border border-slate-700 rounded-2xl py-3.5 mb-4 focus:outline-none focus:border-blue-500 text-white" />
+      <button onclick="checkPin()" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 transition font-bold py-3.5 rounded-2xl text-lg">
+        Unlock
       </button>
-
-      <!-- Subtle bottom actions: Favorite & Edit Nutrition -->
-      <div class="flex items-center justify-between pt-1 text-xs font-bold text-slate-400">
-        <button type="button" onclick="toggleFavoriteFromModal()" id="pmFavBtn" class="hover:text-amber-300 flex items-center gap-1">
-          <span>⭐ Favorite</span>
-        </button>
-        <button type="button" onclick="editFoodFromModal()" class="hover:text-sky-300">
-          ✏️ Edit nutrition label
-        </button>
-      </div>
+      <p id="pinError" class="text-red-400 text-xs mt-3 hidden">Incorrect PIN. Try again.</p>
     </div>
   </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL 2: ADD / EDIT CUSTOM FOOD (SIMPLE 4-BOX MODAL)     -->
-  <!-- ======================================================== -->
-  <div id="customFoodModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
-    <div class="kiosk-card modal-pop w-full max-w-md rounded-3xl p-5 sm:p-6 border-2 border-slate-700 space-y-4">
+  <!-- MAIN APP -->
+  <div id="appContent" class="max-w-3xl mx-auto p-3 sm:p-5 hidden">
+
+    <!-- HEADER & PROFILE SWITCHER -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 glass p-4 rounded-2xl">
       <div class="flex items-center justify-between">
         <div>
-          <h3 id="cfModalTitle" class="text-base sm:text-lg font-extrabold text-white">➕ Save a Custom Food</h3>
-          <p class="text-xs text-slate-400">Copy the numbers straight off the package nutrition label</p>
+          <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
+            <span>🏋️‍♂️</span> Macro & Bulk Tracker
+          </h1>
+          <input type="date" id="datePicker" onchange="changeDate(this.value)"
+            class="bg-transparent text-slate-300 text-sm font-medium mt-0.5 focus:outline-none cursor-pointer" />
         </div>
-        <button type="button" onclick="closeCustomFoodModal()" class="tap-btn w-8 h-8 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center">
-          <i class="fa-solid fa-xmark"></i>
+        <button onclick="openBackupModal()" class="sm:hidden text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2 rounded-xl font-semibold">
+          💾 Backup
         </button>
       </div>
 
-      <input type="hidden" id="cfEditId" value="" />
-
-      <div class="space-y-3">
-        <div class="grid grid-cols-4 gap-2">
-          <div>
-            <label class="block text-[11px] font-extrabold text-slate-300 mb-1">Emoji</label>
-            <input type="text" id="cfEmoji" value="🍽️" maxlength="2" class="w-full bg-slate-900 text-center text-lg py-2 rounded-xl border border-slate-700" />
-          </div>
-          <div class="col-span-3">
-            <label class="block text-[11px] font-extrabold text-slate-300 mb-1">Food Name *</label>
-            <input type="text" id="cfName" placeholder="e.g. Costco Chipotle Chicken" class="w-full bg-slate-900 text-white text-sm font-bold px-3 py-2.5 rounded-xl border border-slate-700" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2.5">
-          <div>
-            <label class="block text-[11px] font-extrabold text-emerald-400 mb-1">Serving Grams (g)</label>
-            <input type="number" id="cfGrams" value="100" min="1" class="w-full bg-slate-900 text-emerald-300 text-sm font-extrabold px-3 py-2.5 rounded-xl border border-emerald-500/40" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-extrabold text-amber-400 mb-1">Calories</label>
-            <input type="number" id="cfCal" placeholder="160" class="w-full bg-slate-900 text-amber-300 text-sm font-extrabold px-3 py-2.5 rounded-xl border border-amber-500/40" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-          <div>
-            <label class="block text-[11px] font-extrabold text-rose-400 mb-1">Protein (g)</label>
-            <input type="number" id="cfPro" step="0.1" placeholder="25" oninput="autoCalcCustomCal()" class="w-full bg-slate-900 text-white text-sm font-bold px-3 py-2 rounded-xl border border-slate-700" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-extrabold text-sky-400 mb-1">Carbs (g)</label>
-            <input type="number" id="cfCarb" step="0.1" placeholder="4" oninput="autoCalcCustomCal()" class="w-full bg-slate-900 text-white text-sm font-bold px-3 py-2 rounded-xl border border-slate-700" />
-          </div>
-          <div>
-            <label class="block text-[11px] font-extrabold text-purple-400 mb-1">Fat (g)</label>
-            <input type="number" id="cfFat" step="0.1" placeholder="4.5" oninput="autoCalcCustomCal()" class="w-full bg-slate-900 text-white text-sm font-bold px-3 py-2 rounded-xl border border-slate-700" />
-          </div>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end gap-2 pt-2">
-        <button type="button" onclick="closeCustomFoodModal()" class="tap-btn px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-extrabold">
-          Cancel
+      <div class="flex items-center gap-2">
+        <button id="btnRyan" onclick="switchUser('Ryan')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm transition">
+          Ryan (<span id="ryanWeightHdr">154</span> lbs)
         </button>
-        <button type="button" onclick="saveCustomFoodModal()" class="tap-btn px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold">
-          ✅ Save Food
+        <button id="btnEric" onclick="switchUser('Eric')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm transition">
+          Eric (<span id="ericWeightHdr">151</span> lbs)
+        </button>
+        <button onclick="openBackupModal()" class="hidden sm:block text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-xl font-semibold">
+          💾 Backup / JSON
         </button>
       </div>
     </div>
-  </div>
 
-  <!-- ======================================================== -->
-  <!-- MODAL 3: BACKUP & SYNC (`💾 Backup`)                     -->
-  <!-- ======================================================== -->
-  <div id="backupModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
-    <div class="kiosk-card modal-pop w-full max-w-lg rounded-3xl p-5 sm:p-6 border-2 border-slate-700 space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-700/80 pb-3">
-        <div>
-          <h3 class="font-extrabold text-base sm:text-lg text-white">💾 Backup &amp; Sync Logs</h3>
-          <p class="text-xs text-slate-400">Save a backup before updating GitHub or text your code to your brother</p>
+    <!-- CARD 1: MACRO PROGRESS & AUTO-GOAL SETTINGS -->
+    <div class="glass p-4 rounded-2xl mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-medium">Bodyweight:</span>
+          <input id="weightInput" type="number" step="0.5" onchange="updateProfileSettings()"
+            class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-white" />
+          <span class="text-slate-400">lbs</span>
         </div>
-        <button type="button" onclick="closeBackupModal()" class="tap-btn w-8 h-8 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center">
-          <i class="fa-solid fa-xmark"></i>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-400 font-medium">Mode:</span>
+          <select id="goalSelect" onchange="updateProfileSettings()"
+            class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 font-bold text-blue-400">
+            <option value="bulk">Lean Bulk (+Surplus)</option>
+            <option value="recomp">Body Recomp (Maintain)</option>
+            <option value="shred">Cut / Shred (-Deficit)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Macro Bars -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-400 font-semibold">🔥 Calories</div>
+          <div class="text-lg font-extrabold mt-0.5"><span id="calNow">0</span> <span class="text-xs font-normal text-slate-400">/ <span id="calGoal">2750</span></span></div>
+          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="calBar" class="bg-amber-500 h-full transition-all" style="width:0%"></div></div>
+        </div>
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-400 font-semibold">🥩 Protein</div>
+          <div class="text-lg font-extrabold mt-0.5 text-rose-400"><span id="proNow">0</span>g <span class="text-xs font-normal text-slate-400">/ <span id="proGoal">160</span>g</span></div>
+          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="proBar" class="bg-rose-500 h-full transition-all" style="width:0%"></div></div>
+        </div>
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-400 font-semibold">🍚 Carbs</div>
+          <div class="text-lg font-extrabold mt-0.5 text-sky-400"><span id="carbNow">0</span>g <span class="text-xs font-normal text-slate-400">/ <span id="carbGoal">330</span>g</span></div>
+          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="carbBar" class="bg-sky-500 h-full transition-all" style="width:0%"></div></div>
+        </div>
+        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+          <div class="text-xs text-slate-400 font-semibold">🥑 Fats</div>
+          <div class="text-lg font-extrabold mt-0.5 text-emerald-400"><span id="fatNow">0</span>g <span class="text-xs font-normal text-slate-400">/ <span id="fatGoal">85</span>g</span></div>
+          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="fatBar" class="bg-emerald-500 h-full transition-all" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 2: MULTI-DATABASE FOOD SEARCH & KIOSK PICKER -->
+    <div class="glass p-4 rounded-2xl mb-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">🔍 Extensive Multi-Database Search</h2>
+        <button onclick="toggleCustomForm()" class="text-xs bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold hover:bg-emerald-600/30">
+          + Custom Vault Food
         </button>
       </div>
 
-      <div class="space-y-2">
-        <span class="text-xs font-extrabold uppercase text-sky-400 block">Step 1: Save Your Current Data</span>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button type="button" onclick="copyBackupCode()" class="tap-btn py-3 px-4 rounded-2xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 font-extrabold text-xs flex items-center justify-center gap-2">
-            <span>📋 1-Tap Copy Backup Code</span>
-          </button>
-          <button type="button" onclick="downloadBackupFile()" class="tap-btn py-3 px-4 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-extrabold text-xs flex items-center justify-center gap-2">
-            <span>⬇️ Download .JSON File</span>
-          </button>
+      <!-- Custom Food Creator Drawer -->
+      <div id="customFoodDrawer" class="hidden bg-slate-900 border border-slate-700 p-3.5 rounded-xl mb-3">
+        <div class="text-xs font-bold text-emerald-400 mb-2">Save New Food to Permanent Vault (Per 100g or 1 Serving)</div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2 text-xs">
+          <input id="cfName" type="text" placeholder="Food Name (e.g., Mom's Pho)" class="col-span-2 sm:col-span-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+          <input id="cfServeLabel" type="text" placeholder="Serving Label (e.g., 1 bowl)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+          <input id="cfGrams" type="number" placeholder="Serving Weight (g) e.g. 100" value="100" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
         </div>
+        <div class="grid grid-cols-4 gap-2 mb-2 text-xs">
+          <input id="cfCal" type="number" placeholder="Calories" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+          <input id="cfPro" type="number" placeholder="Protein (g)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+          <input id="cfCarb" type="number" placeholder="Carbs (g)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+          <input id="cfFat" type="number" placeholder="Fat (g)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+        </div>
+        <button onclick="saveCustomFood()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-xs font-bold py-2 rounded-lg">Save to Vault & Log</button>
       </div>
 
-      <div class="space-y-2 pt-2 border-t border-slate-700/80">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-extrabold uppercase text-amber-400">Step 2: Restore or Merge Backup</span>
-          <label class="text-xs font-extrabold text-sky-400 hover:underline cursor-pointer">
-            📂 Upload .JSON File
-            <input type="file" accept=".json,application/json" onchange="uploadBackupFile(event)" class="hidden" />
-          </label>
+      <!-- Search Input -->
+      <div class="relative mb-2.5">
+        <input id="searchInput" type="text" oninput="handleSearchInput(this.value)"
+          placeholder="Search 'scrambled eggs', 'In-N-Out', 'Costco chicken', 'carne asada'..."
+          class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-xl pl-4 pr-20 py-3 text-sm text-white focus:outline-none" />
+        <button onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white bg-slate-800 px-2 py-1 rounded-md">
+          Clear
+        </button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex gap-1.5 overflow-x-auto pb-2 mb-2 text-xs no-scrollbar">
+        <button onclick="filterCategory('all')" class="cat-btn bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold shrink-0">⚡ All Popular</button>
+        <button onclick="filterCategory('eggs')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🍳 Eggs & Breakfast</button>
+        <button onclick="filterCategory('meat')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🥩 Meats & Costco</button>
+        <button onclick="filterCategory('carbs')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🍚 Rice, Sides & Dairy</button>
+        <button onclick="filterCategory('fastfood')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🍔 Fast Food & Restaurant</button>
+      </div>
+
+      <!-- Status Line -->
+      <div id="apiStatus" class="text-[11px] text-slate-400 mb-2 hidden"></div>
+
+      <!-- Results List -->
+      <div id="searchResults" class="max-h-72 overflow-y-auto space-y-1.5 pr-1"></div>
+
+      <!-- Portion Picker Drawer (Opens when a food is clicked) -->
+      <div id="portionModal" class="hidden mt-3 bg-blue-950/40 border border-blue-500/40 p-3.5 rounded-2xl">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div>
+            <span id="selFoodSource" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">Vault</span>
+            <h3 id="selFoodName" class="font-extrabold text-base mt-1">Scrambled Eggs</h3>
+          </div>
+          <button onclick="closePortionModal()" class="text-slate-400 hover:text-white text-sm font-bold px-2">✕</button>
         </div>
 
-        <textarea
-          id="backupCodeBox"
-          rows="3"
-          placeholder="Paste your Backup Code here..."
-          class="w-full bg-slate-900 text-slate-200 text-xs font-mono p-3 rounded-2xl border border-slate-700 focus:outline-none focus:border-sky-400"
-        ></textarea>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 my-2.5">
+          <div>
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Amount</label>
+            <input id="portionQty" type="number" step="0.25" value="1" oninput="recalcPortionPreview()"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
+          </div>
+          <div class="col-span-1 sm:col-span-2">
+            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Unit / Portion Type</label>
+            <select id="portionUnit" onchange="onUnitChange()"
+              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-blue-300">
+              <option value="serving">Standard Serving</option>
+              <option value="g">Grams (g)</option>
+              <option value="oz">Ounces (oz)</option>
+            </select>
+          </div>
+        </div>
 
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="restoreBackup('merge')" class="tap-btn py-3 px-3 rounded-xl bg-gradient-to-r from-sky-500 to-emerald-500 text-slate-950 font-extrabold text-xs">
-            ✨ Smart Merge (Keep All)
-          </button>
-          <button type="button" onclick="restoreBackup('overwrite')" class="tap-btn py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-extrabold text-xs border border-slate-700">
-            Replace Everything
+        <!-- Quick Multipliers -->
+        <div class="flex flex-wrap gap-1.5 mb-3" id="quickPortionBtns"></div>
+
+        <div class="flex items-center justify-between bg-slate-900/90 px-3.5 py-2.5 rounded-xl border border-slate-800">
+          <div class="text-xs space-x-2">
+            <span class="font-bold text-amber-400"><span id="prevCal">0</span> kcal</span>
+            <span class="font-bold text-rose-400"><span id="prevPro">0</span>g P</span>
+            <span class="font-bold text-sky-400"><span id="prevCarb">0</span>g C</span>
+            <span class="font-bold text-emerald-400"><span id="prevFat">0</span>g F</span>
+          </div>
+          <button onclick="confirmAddFood()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition px-4 py-2 rounded-xl text-xs font-extrabold">
+            + Log Food
           </button>
         </div>
       </div>
     </div>
+
+    <!-- CARD 3: TODAY'S LOGGED FOODS -->
+    <div class="glass p-4 rounded-2xl">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">📋 Logged Today</h2>
+        <button onclick="clearTodayLog()" class="text-xs text-rose-400 hover:underline">Clear Day</button>
+      </div>
+      <div id="dailyLogList" class="space-y-2"></div>
+    </div>
+
   </div>
 
-  <!-- ======================================================== -->
-  <!-- APPLICATION JAVASCRIPT                                   -->
-  <!-- ======================================================== -->
-  <script>
-    const STORAGE_KEY = 'BROTHERHOOD_MACROS_KIOSK_V4';
-    const LEGACY_KEYS = ['BROTHERHOOD_MACROS_SIMPLE_V3', 'BROTHERHOOD_MACROS_V2', 'BROTHERHOOD_MACROS_V1'];
-    const PIN_KEY = 'BROTHERHOOD_PIN_UNLOCKED_V1';
-    const PASSCODE = '4582';
+  <!-- BACKUP MODAL -->
+  <div id="backupModal" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center p-4">
+    <div class="glass max-w-md w-full p-5 rounded-2xl border border-slate-700">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-bold text-lg">💾 Vault JSON Backup</h3>
+        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">Export your logs & custom foods to a `.json` file or paste backup data to restore across devices.</p>
+      <div class="flex gap-2 mb-3">
+        <button onclick="downloadJsonBackup()" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded-xl text-xs font-bold">⬇️ Download .JSON</button>
+        <button onclick="copyJsonBackup()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 py-2 rounded-xl text-xs font-bold">📋 Copy Text</button>
+      </div>
+      <textarea id="backupText" rows="5" placeholder="Paste backup JSON here to restore..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs font-mono text-slate-300 mb-3"></textarea>
+      <button onclick="restoreJsonBackup()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl text-xs font-bold">🔄 Restore from JSON Above</button>
+    </div>
+  </div>
 
-    let enteredPin = '';
-    let searchDebounce = null;
-    let activePortionFood = null;
-    let editingLogEntryId = null;
+<script>
+// ===================== PASSCODE & STATE =====================
+const PASSCODE = "4582";
+const STORAGE_KEY = "RYAN_ERIC_MACRO_VAULT_V3";
 
-    // ========================================================
-    // 90+ HIGH-SCHOOL & GYM FRIENDLY FOODS WITH SMART KEYWORDS
-    // ========================================================
-    const DEFAULT_FOODS = [
-      // ⭐ COSTCO & MEATS
-      { id: 'f_chipotle_chicken', emoji: '🌯', name: 'Costco Chipotle Chicken', category: 'costco_meats', baseGrams: 100, defaultGrams: 200, cal: 160, pro: 25, carb: 4, fat: 4.5, fav: true, builtIn: true, hint: '1 breast portion ≈ 200g', keywords: 'kirkland Southwest pollo asado grilled breast' },
-      { id: 'f_rotisserie', emoji: '🍗', name: 'Costco Rotisserie Chicken', category: 'costco_meats', baseGrams: 100, defaultGrams: 170, cal: 165, pro: 28.5, carb: 0.5, fat: 5, fav: true, builtIn: true, hint: 'Large breast portion ≈ 170g', keywords: 'kirkland whole roasted chicken breast pulled' },
-      { id: 'f_just_bare', emoji: '🍗', name: 'Costco Just Bare Chicken Chunks', category: 'costco_meats', baseGrams: 84, defaultGrams: 168, cal: 160, pro: 16, carb: 9, fat: 6, fav: true, builtIn: true, unitName: 'Serving (84g)', unitGrams: 84, hint: '1 serving ≈ 84g • 2 servings ≈ 168g', keywords: 'lightly breaded nuggets air fryer bites' },
-      { id: 'f_kirkland_chunks', emoji: '🍗', name: 'Kirkland Lightly Breaded Chicken Chunks', category: 'costco_meats', baseGrams: 84, defaultGrams: 168, cal: 140, pro: 16, carb: 9, fat: 5, fav: false, builtIn: true, unitName: 'Serving (84g)', unitGrams: 84, hint: '1 serving = 84g', keywords: 'costco nuggets air fryer chicken bites' },
-      { id: 'f_chicken_breast', emoji: '🍗', name: 'Grilled Chicken Breast', category: 'costco_meats', baseGrams: 100, defaultGrams: 200, cal: 165, pro: 31, carb: 0, fat: 3.6, fav: true, builtIn: true, hint: '1 medium breast ≈ 175g', keywords: 'boneless skinless cooked baked chicken' },
-      { id: 'f_chicken_tenderloin', emoji: '🍗', name: 'Cooked Chicken Tenderloins', category: 'costco_meats', baseGrams: 100, defaultGrams: 170, cal: 148, pro: 30, carb: 0, fat: 2.5, fav: false, builtIn: true, hint: '4 tenders ≈ 170g', keywords: 'strips grilled tenders lean' },
-      { id: 'f_chicken_thigh', emoji: '🍖', name: 'Cooked Chicken Thighs', category: 'costco_meats', baseGrams: 100, defaultGrams: 170, cal: 209, pro: 26, carb: 0, fat: 10.9, fav: false, builtIn: true, unitName: 'Thigh (85g)', unitGrams: 85, hint: '1 thigh ≈ 85g', keywords: 'boneless skinless dark meat chicken' },
-      { id: 'f_beef_85', emoji: '🥩', name: 'Ground Beef (85/15 Cooked)', category: 'costco_meats', baseGrams: 100, defaultGrams: 150, cal: 215, pro: 26, carb: 0, fat: 12, fav: true, builtIn: true, hint: '1 burger patty ≈ 115g', keywords: 'hamburger meat 85 15 beef patty' },
-      { id: 'f_beef_93', emoji: '🥩', name: 'Lean Ground Beef (93/7)', category: 'costco_meats', baseGrams: 100, defaultGrams: 150, cal: 172, pro: 27, carb: 0, fat: 6.5, fav: false, builtIn: true, hint: 'Great for lean bulking & cutting', keywords: '93 7 90 10 extra lean beef taco meat' },
-      { id: 'f_costco_patty', emoji: '🍔', name: 'Kirkland Grass-Fed Beef Patty', category: 'costco_meats', baseGrams: 151, defaultGrams: 151, cal: 330, pro: 26, carb: 0, fat: 25, fav: false, builtIn: true, unitName: 'Patty (151g)', unitGrams: 151, hint: '1/3 lb burger patty = 151g', keywords: 'costco frozen burger patty' },
-      { id: 'f_sirloin_steak', emoji: '🥩', name: 'Top Sirloin Steak', category: 'costco_meats', baseGrams: 100, defaultGrams: 200, cal: 206, pro: 29, carb: 0, fat: 9.2, fav: true, builtIn: true, hint: '8 oz steak ≈ 225g', keywords: 'beef steak carne asada' },
-      { id: 'f_ribeye_steak', emoji: '🥩', name: 'Ribeye / New York Strip Steak', category: 'costco_meats', baseGrams: 100, defaultGrams: 225, cal: 291, pro: 24, carb: 0, fat: 21, fav: false, builtIn: true, hint: '8 oz steak ≈ 225g', keywords: 'ny strip steak beef rib eye' },
-      { id: 'f_ground_turkey', emoji: '🦃', name: 'Ground Turkey (93/7 Cooked)', category: 'costco_meats', baseGrams: 100, defaultGrams: 150, cal: 170, pro: 27, carb: 0, fat: 6.2, fav: false, builtIn: true, hint: 'Super high protein', keywords: 'lean turkey meat' },
-      { id: 'f_salmon', emoji: '🐟', name: 'Cooked Atlantic Salmon', category: 'costco_meats', baseGrams: 100, defaultGrams: 170, cal: 208, pro: 22.5, carb: 0, fat: 12.5, fav: false, builtIn: true, hint: '1 fillet ≈ 170g', keywords: 'fish fillet costco salmon' },
-      { id: 'f_tilapia', emoji: '🐟', name: 'Cooked Tilapia / White Fish', category: 'costco_meats', baseGrams: 100, defaultGrams: 170, cal: 128, pro: 26, carb: 0, fat: 2.7, fav: false, builtIn: true, hint: '1 fillet ≈ 140g', keywords: 'cod mahi fish fillet lean' },
-      { id: 'f_shrimp', emoji: '🍤', name: 'Costco Cooked Shrimp', category: 'costco_meats', baseGrams: 100, defaultGrams: 150, cal: 99, pro: 24, carb: 0.2, fat: 0.3, fav: false, builtIn: true, hint: 'Almost pure protein', keywords: 'kirkland tail off prawns seafood' },
-      { id: 'f_tuna_can', emoji: '🐟', name: 'Kirkland Canned Tuna', category: 'costco_meats', baseGrams: 140, defaultGrams: 140, cal: 180, pro: 39, carb: 0, fat: 2, fav: false, builtIn: true, unitName: 'Can (140g)', unitGrams: 140, hint: '1 drained can = 140g', keywords: 'albacore tuna fish can' },
-      { id: 'f_bacon', emoji: '🥓', name: 'Cooked Bacon Strips', category: 'costco_meats', baseGrams: 16, defaultGrams: 32, cal: 86, pro: 6, carb: 0.2, fat: 6.8, fav: false, builtIn: true, unitName: 'Strip (16g)', unitGrams: 16, hint: '1 strip = 16g • 2 strips = 32g', keywords: 'pork bacon breakfast' },
-      { id: 'f_turkey_bacon', emoji: '🥓', name: 'Costco Turkey Bacon', category: 'costco_meats', baseGrams: 28, defaultGrams: 56, cal: 45, pro: 6, carb: 1, fat: 2, fav: false, builtIn: true, unitName: 'Slice (28g)', unitGrams: 28, hint: '1 slice = 28g', keywords: 'columbus turkey bacon breakfast' },
-      { id: 'f_deli_turkey', emoji: '🥪', name: 'Kirkland Deli Turkey Breast', category: 'costco_meats', baseGrams: 56, defaultGrams: 112, cal: 60, pro: 13, carb: 1, fat: 0.5, fav: false, builtIn: true, unitName: '2 oz (56g)', unitGrams: 56, hint: 'Sandwich portion ≈ 112g', keywords: 'sliced lunch meat sandwich turkey' },
-      { id: 'f_pork_chop', emoji: '🥩', name: 'Cooked Boneless Pork Chop', category: 'costco_meats', baseGrams: 100, defaultGrams: 170, cal: 195, pro: 29, carb: 0, fat: 8, fav: false, builtIn: true, hint: '1 medium chop ≈ 170g', keywords: 'pork loin tenderloin meat' },
+let state = {
+  currentUser: "Ryan",
+  currentDate: new Date().toISOString().split('T')[0],
+  profiles: {
+    Ryan: { weight: 154, goal: "bulk" },
+    Eric: { weight: 151, goal: "bulk" }
+  },
+  customFoods: [],
+  logs: {} //Format: { "Ryan_2026-10-16": [ ...items ] }
+};
 
-      // 🍚 CARBS, EGGS & SIDES
-      { id: 'f_white_rice', emoji: '🍚', name: 'Cooked White / Jasmine Rice', category: 'carbs_sides', baseGrams: 100, defaultGrams: 200, cal: 130, pro: 2.7, carb: 28, fat: 0.3, fav: true, builtIn: true, unitName: 'Cup (158g)', unitGrams: 158, hint: '1 cup cooked ≈ 158g', keywords: 'basmati steamed rice' },
-      { id: 'f_brown_rice', emoji: '🍚', name: 'Cooked Brown Rice', category: 'carbs_sides', baseGrams: 100, defaultGrams: 195, cal: 112, pro: 2.6, carb: 23.5, fat: 0.9, fav: false, builtIn: true, unitName: 'Cup (195g)', unitGrams: 195, hint: '1 cup cooked ≈ 195g', keywords: 'whole grain rice' },
-      { id: 'f_whole_eggs', emoji: '🥚', name: 'Whole Large Eggs', category: 'carbs_sides', baseGrams: 50, defaultGrams: 150, cal: 72, pro: 6.3, carb: 0.4, fat: 4.8, fav: true, builtIn: true, unitName: 'Egg (50g)', unitGrams: 50, hint: '1 egg = 50g • 3 eggs = 150g', keywords: 'scrambled fried boiled eggs breakfast' },
-      { id: 'f_egg_whites', emoji: '🍳', name: 'Kirkland Liquid Egg Whites', category: 'carbs_sides', baseGrams: 100, defaultGrams: 150, cal: 52, pro: 11, carb: 0.7, fat: 0.2, fav: false, builtIn: true, hint: 'Pure lean protein', keywords: 'carton egg whites breakfast' },
-      { id: 'f_oats', emoji: '🥣', name: 'Rolled Oats / Oatmeal (Dry)', category: 'carbs_sides', baseGrams: 40, defaultGrams: 80, cal: 150, pro: 5, carb: 27, fat: 2.5, fav: true, builtIn: true, unitName: '1/2 Cup (40g)', unitGrams: 40, hint: '1/2 cup = 40g • 1 cup = 80g', keywords: 'quaker oats porridge breakfast' },
-      { id: 'f_bagel', emoji: '🥯', name: 'Plain / Everything Bagel', category: 'carbs_sides', baseGrams: 105, defaultGrams: 105, cal: 270, pro: 10, carb: 53, fat: 1.5, fav: true, builtIn: true, unitName: 'Bagel (105g)', unitGrams: 105, hint: '1 whole bagel = 105g', keywords: 'costco kirkland thomas bagel bread' },
-      { id: 'f_cream_cheese', emoji: '🧀', name: 'Philadelphia Cream Cheese', category: 'carbs_sides', baseGrams: 28, defaultGrams: 28, cal: 100, pro: 2, carb: 1, fat: 10, fav: false, builtIn: true, unitName: 'Spread (28g)', unitGrams: 28, hint: '2 tbsp spread = 28g', keywords: 'bagel spread cheese' },
-      { id: 'f_bread', emoji: '🍞', name: "Bread Slice (Dave's / Sourdough)", category: 'carbs_sides', baseGrams: 45, defaultGrams: 90, cal: 110, pro: 5, carb: 22, fat: 1.5, fav: false, builtIn: true, unitName: 'Slice (45g)', unitGrams: 45, hint: '1 slice = 45g • 2 slices = 90g', keywords: 'toast sandwich wheat bread daves killer' },
-      { id: 'f_pancakes', emoji: '🥞', name: 'Kodiak Protein Pancakes / Waffles', category: 'carbs_sides', baseGrams: 53, defaultGrams: 106, cal: 190, pro: 14, carb: 30, fat: 2, fav: false, builtIn: true, unitName: 'Serving (53g)', unitGrams: 53, hint: '1 flapjack mix serving = 53g', keywords: 'kodiak cakes waffle breakfast' },
-      { id: 'f_potato', emoji: '🥔', name: 'Baked Potato / Air Fryer Fries', category: 'carbs_sides', baseGrams: 100, defaultGrams: 200, cal: 93, pro: 2.5, carb: 21, fat: 0.1, fav: false, builtIn: true, hint: '1 medium potato ≈ 175g', keywords: 'russet yellow gold mashed potatoes' },
-      { id: 'f_sweet_potato', emoji: '🍠', name: 'Baked Sweet Potato', category: 'carbs_sides', baseGrams: 100, defaultGrams: 200, cal: 90, pro: 2, carb: 20.7, fat: 0.2, fav: false, builtIn: true, hint: '1 medium ≈ 150g', keywords: 'yam potatoes' },
-      { id: 'f_pasta', emoji: '🍝', name: 'Cooked Pasta / Spaghetti', category: 'carbs_sides', baseGrams: 100, defaultGrams: 200, cal: 158, pro: 5.8, carb: 31, fat: 0.9, fav: false, builtIn: true, hint: '1 cup cooked ≈ 140g', keywords: 'noodles penne rigatoni fettuccine macaroni' },
-      { id: 'f_protein_pasta', emoji: '🍝', name: 'Barilla Protein+ Pasta (Cooked)', category: 'carbs_sides', baseGrams: 100, defaultGrams: 200, cal: 150, pro: 8, carb: 27, fat: 1.5, fav: false, builtIn: true, hint: 'Extra protein pasta', keywords: 'banza chickpea protein noodles' },
-      { id: 'f_mac_cheese', emoji: '🧀', name: 'Mac & Cheese (Cooked)', category: 'carbs_sides', baseGrams: 190, defaultGrams: 190, cal: 310, pro: 11, carb: 42, fat: 11, fav: false, builtIn: true, unitName: 'Cup (190g)', unitGrams: 190, hint: '1 cup = 190g', keywords: 'kraft annies macaroni and cheese' },
-      { id: 'f_tortilla', emoji: '🫓', name: 'Flour Burrito Tortilla', category: 'carbs_sides', baseGrams: 70, defaultGrams: 70, cal: 210, pro: 5, carb: 35, fat: 5, fav: false, builtIn: true, unitName: 'Tortilla (70g)', unitGrams: 70, hint: '1 large tortilla = 70g', keywords: 'mission wrap taco quesadilla tortilla' },
-      { id: 'f_carb_tortilla', emoji: '🫓', name: 'Mission Carb Balance Tortilla', category: 'carbs_sides', baseGrams: 43, defaultGrams: 43, cal: 70, pro: 5, carb: 19, fat: 1.5, fav: false, builtIn: true, unitName: 'Tortilla (43g)', unitGrams: 43, hint: 'High fiber low calorie tortilla', keywords: 'low carb wrap keto tortilla' },
-      { id: 'f_black_beans', emoji: '🫘', name: 'Cooked Black / Pinto Beans', category: 'carbs_sides', baseGrams: 100, defaultGrams: 130, cal: 132, pro: 8.9, carb: 23.7, fat: 0.5, fav: false, builtIn: true, hint: 'Great fiber & carbs', keywords: 'frijoles refried beans' },
-      { id: 'f_avocado', emoji: '🥑', name: 'Avocado / Guacamole', category: 'carbs_sides', baseGrams: 100, defaultGrams: 75, cal: 160, pro: 2, carb: 8.5, fat: 14.7, fav: false, builtIn: true, unitName: 'Half (75g)', unitGrams: 75, hint: '1/2 avocado ≈ 75g', keywords: 'guac kirkland avocado' },
-      { id: 'f_shredded_cheese', emoji: '🧀', name: 'Shredded Cheese (Mexican/Cheddar)', category: 'carbs_sides', baseGrams: 28, defaultGrams: 28, cal: 110, pro: 7, carb: 1, fat: 9, fav: false, builtIn: true, unitName: 'Handful (28g)', unitGrams: 28, hint: '1/4 cup = 28g', keywords: 'mozzarella jack cheese' },
-      { id: 'f_broccoli', emoji: '🥦', name: 'Broccoli / Green Veggies', category: 'carbs_sides', baseGrams: 100, defaultGrams: 150, cal: 35, pro: 2.4, carb: 7.2, fat: 0.4, fav: false, builtIn: true, hint: '1 cup ≈ 150g', keywords: 'vegetables greens asparagus green beans' },
+// ===================== EXTENSIVE BUILT-IN FOOD CATALOG =====================
+// Macros are stored per 100g AND with a realistic standard serving weight (serveG) & label (serveLabel)
+const BUILTIN_CATALOG = [
+  // --- EGGS & BREAKFAST ---
+  { name: "Scrambled Eggs (Whole, Cooked with Butter/Milk)", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "2 large scrambled (122g)", serveG: 122, cal100: 149, pro100: 10.0, carb100: 1.6, fat100: 11.0 },
+  { name: "Scrambled Eggs (Plain / Cooking Spray)", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "2 large eggs (100g)", serveG: 100, cal100: 143, pro100: 12.6, carb100: 0.7, fat100: 9.5 },
+  { name: "Scrambled Eggs with Cheese", emoji: "🧀", cat: "eggs", source: "Vault", serveLabel: "2 eggs w/ cheese (135g)", serveG: 135, cal100: 185, pro100: 12.8, carb100: 1.5, fat100: 14.2 },
+  { name: "Fried Egg (Over Easy / Sunny Side Up)", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "1 large fried egg (46g)", serveG: 46, cal100: 196, pro100: 13.6, carb100: 0.8, fat100: 14.8 },
+  { name: "Hard Boiled Egg", emoji: "🥚", cat: "eggs", source: "Vault", serveLabel: "1 large egg (50g)", serveG: 50, cal100: 155, pro100: 12.6, carb100: 1.1, fat100: 10.6 },
+  { name: "Large Raw / Normal Egg", emoji: "🥚", cat: "eggs", source: "Vault", serveLabel: "1 large egg (50g)", serveG: 50, cal100: 143, pro100: 12.6, carb100: 0.7, fat100: 9.5 },
+  { name: "Liquid Egg Whites (Kirkland / Carton)", emoji: "🥛", cat: "eggs", source: "Vault", serveLabel: "1/2 cup / 120g", serveG: 120, cal100: 52, pro100: 10.9, carb100: 0.7, fat100: 0.2 },
+  { name: "Chorizo and Scrambled Eggs", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "1 cup (180g)", serveG: 180, cal100: 230, pro100: 14.5, carb100: 2.0, fat100: 18.0 },
+  { name: "Ham & Cheese Omelet", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "1 omelet (180g)", serveG: 180, cal100: 178, pro100: 13.5, carb100: 1.5, fat100: 13.0 },
+  { name: "Bacon (Pan-Fried Pork)", emoji: "🥓", cat: "eggs", source: "Vault", serveLabel: "3 slices (35g)", serveG: 35, cal100: 541, pro100: 37.0, carb100: 1.4, fat100: 42.0 },
+  { name: "Turkey Bacon", emoji: "🥓", cat: "eggs", source: "Vault", serveLabel: "2 slices (28g)", serveG: 28, cal100: 382, pro100: 29.0, carb100: 3.5, fat100: 28.0 },
+  { name: "Pork Breakfast Sausage Links/Patties", emoji: "🌭", cat: "eggs", source: "Vault", serveLabel: "2 patties (76g)", serveG: 76, cal100: 339, pro100: 18.0, carb100: 1.0, fat100: 29.0 },
+  { name: "Rolled Oats / Oatmeal (Dry)", emoji: "🥣", cat: "eggs", source: "Vault", serveLabel: "1/2 cup dry (40g)", serveG: 40, cal100: 389, pro100: 16.9, carb100: 66.3, fat100: 6.9 },
+  { name: "Oatmeal (Cooked with Water)", emoji: "🥣", cat: "eggs", source: "Vault", serveLabel: "1 cup cooked (234g)", serveG: 234, cal100: 71, pro100: 2.5, carb100: 12.0, fat100: 1.5 },
+  { name: "Crispy Hash Browns (Shredded / Patties)", emoji: "🥔", cat: "eggs", source: "Vault", serveLabel: "1 cup / 2 patties (120g)", serveG: 120, cal100: 265, pro100: 2.6, carb100: 31.0, fat100: 15.0 },
+  { name: "Buttermilk Pancakes", emoji: "🥞", cat: "eggs", source: "Vault", serveLabel: "2 medium pancakes (150g)", serveG: 150, cal100: 227, pro100: 6.4, carb100: 28.3, fat100: 9.7 },
+  { name: "Kodiak Protein Pancakes (Prepared)", emoji: "🥞", cat: "eggs", source: "Vault", serveLabel: "3 pancakes (150g)", serveG: 150, cal100: 190, pro100: 14.0, carb100: 30.0, fat100: 2.0 },
+  { name: "French Toast", emoji: "🍞", cat: "eggs", source: "Vault", serveLabel: "2 slices (130g)", serveG: 130, cal100: 229, pro100: 7.7, carb100: 25.0, fat100: 10.8 },
 
-      // 🍔 FAST FOOD & RESTAURANTS (In-N-Out, Chick-fil-A, Cane's, Chipotle, Panda, Taco Bell, McD, Jack)
-      { id: 'f_innout_dd', emoji: '🍔', name: 'In-N-Out Double-Double', category: 'fast_food', baseGrams: 330, defaultGrams: 330, cal: 670, pro: 37, carb: 39, fat: 41, fav: true, builtIn: true, unitName: 'Burger (330g)', unitGrams: 330, hint: '1 Double-Double = 330g', keywords: 'in n out innout double double cheeseburger animal style burger' },
-      { id: 'f_innout_dd_pro', emoji: '🥬', name: 'In-N-Out Double-Double (Protein Style)', category: 'fast_food', baseGrams: 290, defaultGrams: 290, cal: 520, pro: 33, carb: 11, fat: 39, fav: false, builtIn: true, unitName: 'Lettuce Wrap (290g)', unitGrams: 290, hint: 'Lettuce wrapped Double-Double', keywords: 'in n out innout double double protein style low carb lettuce wrap' },
-      { id: 'f_innout_3x3', emoji: '🍔', name: 'In-N-Out 3x3 (Triple)', category: 'fast_food', baseGrams: 420, defaultGrams: 420, cal: 860, pro: 51, carb: 39, fat: 55, fav: false, builtIn: true, unitName: 'Burger (420g)', unitGrams: 420, hint: '3 meat 3 cheese burger = 420g', keywords: 'in n out innout 3 by 3 triple triple burger' },
-      { id: 'f_innout_4x4', emoji: '🍔', name: 'In-N-Out 4x4 (Quad)', category: 'fast_food', baseGrams: 510, defaultGrams: 510, cal: 1050, pro: 65, carb: 39, fat: 69, fav: false, builtIn: true, unitName: 'Burger (510g)', unitGrams: 510, hint: '4 meat 4 cheese burger = 510g', keywords: 'in n out innout 4 by 4 quad burger' },
-      { id: 'f_innout_cb', emoji: '🍔', name: 'In-N-Out Cheeseburger', category: 'fast_food', baseGrams: 243, defaultGrams: 243, cal: 480, pro: 22, carb: 39, fat: 27, fav: false, builtIn: true, unitName: 'Burger (243g)', unitGrams: 243, hint: '1 single cheeseburger = 243g', keywords: 'in n out innout single burger' },
-      { id: 'f_innout_fries', emoji: '🍟', name: 'In-N-Out French Fries', category: 'fast_food', baseGrams: 125, defaultGrams: 125, cal: 370, pro: 6, carb: 49, fat: 17, fav: false, builtIn: true, unitName: 'Order (125g)', unitGrams: 125, hint: '1 basket of fries = 125g', keywords: 'in n out innout fries' },
-      { id: 'f_innout_animal_fries', emoji: '🍟', name: 'In-N-Out Animal Style Fries', category: 'fast_food', baseGrams: 225, defaultGrams: 225, cal: 750, pro: 15, carb: 54, fat: 51, fav: false, builtIn: true, unitName: 'Order (225g)', unitGrams: 225, hint: 'Fries with cheese, spread & grilled onions', keywords: 'in n out innout animal fries' },
+  // --- MEATS, POULTRY, SEAFOOD & COSTCO STAPLES ---
+  { name: "Costco Chipotle Chicken (Kirkland Ready Meal)", emoji: "🍗", cat: "meat", source: "Costco Vault", serveLabel: "100g portion", serveG: 100, cal100: 160, pro100: 24.0, carb100: 3.0, fat100: 5.5 },
+  { name: "Costco Rotisserie Chicken (Breast Meat)", emoji: "🍗", cat: "meat", source: "Costco Vault", serveLabel: "3 oz / 85g", serveG: 85, cal100: 165, pro100: 22.4, carb100: 0.5, fat100: 8.2 },
+  { name: "Costco Kirkland Lightly Breaded Chicken Breast Chunks", emoji: "🍗", cat: "meat", source: "Costco Vault", serveLabel: "3 oz / 84g", serveG: 84, cal100: 167, pro100: 19.0, carb100: 10.7, fat100: 6.0 },
+  { name: "Chicken Breast (Cooked, Boneless Skinless)", emoji: "🍗", cat: "meat", source: "Vault", serveLabel: "1 medium breast (150g)", serveG: 150, cal100: 165, pro100: 31.0, carb100: 0.0, fat100: 3.6 },
+  { name: "Chicken Thigh (Cooked, Boneless Skinless)", emoji: "🍗", cat: "meat", source: "Vault", serveLabel: "150g cooked", serveG: 150, cal100: 209, pro100: 26.0, carb100: 0.0, fat100: 10.9 },
+  { name: "Ground Beef 80/20 (Cooked, Pan-Browned)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "4 oz cooked (113g)", serveG: 113, cal100: 254, pro100: 25.8, carb100: 0.0, fat100: 16.0 },
+  { name: "Ground Beef 93/7 Lean (Cooked)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "4 oz cooked (113g)", serveG: 113, cal100: 182, pro100: 28.5, carb100: 0.0, fat100: 7.0 },
+  { name: "Carne Asada (Grilled Flap/Skirt Steak)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "5 oz / 140g", serveG: 140, cal100: 215, pro100: 27.0, carb100: 1.5, fat100: 11.0 },
+  { name: "Ribeye Steak (Cooked)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "8 oz steak (225g)", serveG: 225, cal100: 291, pro100: 24.0, carb100: 0.0, fat100: 21.0 },
+  { name: "Top Sirloin Steak (Cooked)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "6 oz steak (170g)", serveG: 170, cal100: 206, pro100: 29.5, carb100: 0.0, fat100: 9.0 },
+  { name: "Pork Carnitas (Pulled Pork)", emoji: "🐖", cat: "meat", source: "Vault", serveLabel: "5 oz / 140g", serveG: 140, cal100: 240, pro100: 26.0, carb100: 1.0, fat100: 14.5 },
+  { name: "Pork Chop (Cooked, Boneless)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "1 chop (145g)", serveG: 145, cal100: 211, pro100: 29.0, carb100: 0.0, fat100: 9.7 },
+  { name: "Ground Turkey 93/7 (Cooked)", emoji: "🦃", cat: "meat", source: "Vault", serveLabel: "4 oz cooked (113g)", serveG: 113, cal100: 203, pro100: 27.4, carb100: 0.0, fat100: 9.8 },
+  { name: "Atlantic Salmon (Cooked / Baked)", emoji: "🐟", cat: "meat", source: "Vault", serveLabel: "1 fillet (154g)", serveG: 154, cal100: 206, pro100: 22.1, carb100: 0.0, fat100: 12.4 },
+  { name: "Tilapia / White Fish (Cooked)", emoji: "🐟", cat: "meat", source: "Vault", serveLabel: "1 fillet (140g)", serveG: 140, cal100: 128, pro100: 26.2, carb100: 0.0, fat100: 2.7 },
+  { name: "Canned Tuna in Water (Drained)", emoji: "🥫", cat: "meat", source: "Vault", serveLabel: "1 can drained (113g)", serveG: 113, cal100: 116, pro100: 25.5, carb100: 0.0, fat100: 0.8 },
+  { name: "Shrimp (Cooked / Grilled)", emoji: "🍤", cat: "meat", source: "Vault", serveLabel: "4 oz / 113g", serveG: 113, cal100: 99, pro100: 24.0, carb100: 0.2, fat100: 0.3 },
+  { name: "SPAM Classic (Pan-Fried)", emoji: "🥫", cat: "meat", source: "Vault", serveLabel: "2 oz slice (56g)", serveG: 56, cal100: 321, pro100: 12.5, carb100: 1.8, fat100: 28.6 },
 
-      { id: 'f_chipotle_bowl', emoji: '🌯', name: 'Chipotle Chicken Burrito Bowl', category: 'fast_food', baseGrams: 510, defaultGrams: 510, cal: 710, pro: 52, carb: 72, fat: 22, fav: true, builtIn: true, unitName: 'Bowl (510g)', unitGrams: 510, hint: 'Rice, beans, chicken, cheese, salsa', keywords: 'chipotle mexican grill chicken bowl' },
-      { id: 'f_chipotle_double', emoji: '🌯', name: 'Chipotle Double Chicken Bowl', category: 'fast_food', baseGrams: 620, defaultGrams: 620, cal: 890, pro: 84, carb: 72, fat: 29, fav: false, builtIn: true, unitName: 'Bowl (620g)', unitGrams: 620, hint: 'Double meat chicken bowl = 620g', keywords: 'chipotle double protein bowl' },
-      { id: 'f_chipotle_burrito', emoji: '🌯', name: 'Chipotle Chicken / Steak Burrito', category: 'fast_food', baseGrams: 580, defaultGrams: 580, cal: 1030, pro: 58, carb: 122, fat: 33, fav: false, builtIn: true, unitName: 'Burrito (580g)', unitGrams: 580, hint: 'Full wrapped Chipotle burrito', keywords: 'chipotle steak chicken burrito' },
+  // --- RICE, CARBS, SIDES, DAIRY & SHAKES ---
+  { name: "White Jasmine / Sticky Rice (Cooked)", emoji: "🍚", cat: "carbs", source: "Vault", serveLabel: "1 cup cooked (158g)", serveG: 158, cal100: 130, pro100: 2.7, carb100: 28.2, fat100: 0.3 },
+  { name: "Brown Rice (Cooked)", emoji: "🍚", cat: "carbs", source: "Vault", serveLabel: "1 cup cooked (195g)", serveG: 195, cal100: 123, pro100: 2.7, carb100: 25.6, fat100: 1.0 },
+  { name: "Egg Fried Rice (Restaurant / Homemade)", emoji: "🍛", cat: "carbs", source: "Vault", serveLabel: "1 cup (180g)", serveG: 180, cal100: 174, pro100: 4.5, carb100: 25.0, fat100: 6.0 },
+  { name: "Russet / Baked Potato (Cooked)", emoji: "🥔", cat: "carbs", source: "Vault", serveLabel: "1 medium potato (173g)", serveG: 173, cal100: 93, pro100: 2.5, carb100: 21.2, fat100: 0.1 },
+  { name: "Sweet Potato (Baked)", emoji: "🍠", cat: "carbs", source: "Vault", serveLabel: "1 medium (150g)", serveG: 150, cal100: 90, pro100: 2.0, carb100: 20.7, fat100: 0.2 },
+  { name: "Pasta / Spaghetti (Cooked)", emoji: "🍝", cat: "carbs", source: "Vault", serveLabel: "1 cup cooked (140g)", serveG: 140, cal100: 158, pro100: 5.8, carb100: 30.9, fat100: 0.9 },
+  { name: "Flour Tortilla (Burrito Size)", emoji: "🫓", cat: "carbs", source: "Vault", serveLabel: "1 large tortilla (70g)", serveG: 70, cal100: 304, pro100: 8.2, carb100: 50.6, fat100: 7.4 },
+  { name: "Corn Tortillas (Street Taco)", emoji: "🌮", cat: "carbs", source: "Vault", serveLabel: "2 tortillas (50g)", serveG: 50, cal100: 218, pro100: 5.7, carb100: 44.6, fat100: 2.9 },
+  { name: "Sourdough / White Bread", emoji: "🍞", cat: "carbs", source: "Vault", serveLabel: "2 slices (68g)", serveG: 68, cal100: 270, pro100: 9.4, carb100: 51.0, fat100: 3.0 },
+  { name: "Black or Pinto Beans (Cooked)", emoji: "🫘", cat: "carbs", source: "Vault", serveLabel: "1/2 cup (86g)", serveG: 86, cal100: 132, pro100: 8.9, carb100: 23.7, fat100: 0.5 },
+  { name: "Avocado / Guacamole", emoji: "🥑", cat: "carbs", source: "Vault", serveLabel: "1/2 medium avocado (100g)", serveG: 100, cal100: 160, pro100: 2.0, carb100: 8.5, fat100: 14.7 },
+  { name: "Peanut Butter (Creamy / Crunchy)", emoji: "🥜", cat: "carbs", source: "Vault", serveLabel: "2 tbsp (32g)", serveG: 32, cal100: 588, pro100: 25.0, carb100: 20.0, fat100: 50.0 },
+  { name: "Banana", emoji: "🍌", cat: "carbs", source: "Vault", serveLabel: "1 medium banana (118g)", serveG: 118, cal100: 89, pro100: 1.1, carb100: 22.8, fat100: 0.3 },
+  { name: "Whey Protein Isolate / Gold Standard Scoop", emoji: "🥤", cat: "carbs", source: "Vault", serveLabel: "1 scoop (31g)", serveG: 31, cal100: 387, pro100: 77.4, carb100: 9.7, fat100: 4.8 },
+  { name: "Fairlife Core Power Elite (42g Protein Shake)", emoji: "🍼", cat: "carbs", source: "Vault", serveLabel: "1 bottle (414g)", serveG: 414, cal100: 55.5, pro100: 10.1, carb100: 1.9, fat100: 0.8 },
+  { name: "Whole Milk", emoji: "🥛", cat: "carbs", source: "Vault", serveLabel: "1 cup (244g)", serveG: 244, cal100: 61, pro100: 3.2, carb100: 4.8, fat100: 3.3 },
+  { name: "Greek Yogurt (Nonfat Plain / Oikos Pro)", emoji: "🥣", cat: "carbs", source: "Vault", serveLabel: "1 cup / 170g", serveG: 170, cal100: 59, pro100: 10.3, carb100: 3.6, fat100: 0.4 },
 
-      { id: 'f_cfa_nuggets', emoji: '🍗', name: 'Chick-fil-A 12ct Nuggets', category: 'fast_food', baseGrams: 170, defaultGrams: 170, cal: 380, pro: 40, carb: 14, fat: 17, fav: true, builtIn: true, unitName: '12-Pack (170g)', unitGrams: 170, hint: '12 nuggets = 170g • 8ct ≈ 113g', keywords: 'chick fil a chickfila cfa chicken nuggets' },
-      { id: 'f_cfa_grilled_nuggets', emoji: '🍗', name: 'Chick-fil-A 12ct Grilled Nuggets', category: 'fast_food', baseGrams: 136, defaultGrams: 136, cal: 200, pro: 38, carb: 2, fat: 4.5, fav: false, builtIn: true, unitName: '12-Pack (136g)', unitGrams: 136, hint: 'Super lean 38g protein!', keywords: 'chick fil a chickfila cfa grilled nuggets' },
-      { id: 'f_cfa_sandwich', emoji: '🍔', name: 'Chick-fil-A Chicken Sandwich', category: 'fast_food', baseGrams: 167, defaultGrams: 167, cal: 440, pro: 29, carb: 41, fat: 17, fav: false, builtIn: true, unitName: 'Sandwich (167g)', unitGrams: 167, hint: '1 classic sandwich = 167g', keywords: 'chick fil a chickfila cfa original chicken sandwich' },
-      { id: 'f_cfa_spicy', emoji: '🌶️', name: 'Chick-fil-A Spicy Chicken Sandwich', category: 'fast_food', baseGrams: 173, defaultGrams: 173, cal: 460, pro: 28, carb: 45, fat: 19, fav: false, builtIn: true, unitName: 'Sandwich (173g)', unitGrams: 173, hint: '1 spicy sandwich = 173g', keywords: 'chick fil a chickfila cfa spicy deluxe' },
-      { id: 'f_cfa_fries', emoji: '🍟', name: 'Chick-fil-A Waffle Fries (Medium)', category: 'fast_food', baseGrams: 125, defaultGrams: 125, cal: 420, pro: 5, carb: 45, fat: 24, fav: false, builtIn: true, unitName: 'Medium (125g)', unitGrams: 125, hint: '1 medium waffle fry = 125g', keywords: 'chick fil a chickfila cfa waffle potato fries' },
+  // --- FAST FOOD & RESTAURANT CATALOG ---
+  { name: "In-N-Out Double-Double (w/ Onion)", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (330g)", serveG: 330, cal100: 203, pro100: 11.2, carb100: 11.8, fat100: 12.4 },
+  { name: "In-N-Out Double-Double Protein Style (Lettuce Wrap)", emoji: "🥬", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (290g)", serveG: 290, cal100: 179, pro100: 11.4, carb100: 3.8, fat100: 13.4 },
+  { name: "In-N-Out 4x4 (Quad Burger)", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (500g)", serveG: 500, cal100: 210, pro100: 14.6, carb100: 8.0, fat100: 13.6 },
+  { name: "In-N-Out Flying Dutchman (2 Patties, 2 Cheese)", emoji: "🧀", cat: "fastfood", source: "FastFood", serveLabel: "1 order (150g)", serveG: 150, cal100: 253, pro100: 18.7, carb100: 1.3, fat100: 19.3 },
+  { name: "In-N-Out French Fries (Regular)", emoji: "🍟", cat: "fastfood", source: "FastFood", serveLabel: "1 order (125g)", serveG: 125, cal100: 296, pro100: 4.8, carb100: 39.2, fat100: 13.6 },
+  { name: "In-N-Out Animal Style Fries", emoji: "🍟", cat: "fastfood", source: "FastFood", serveLabel: "1 order (275g)", serveG: 275, cal100: 272, pro100: 5.5, carb100: 19.6, fat100: 18.9 },
+  { name: "Jack in the Box Two Tacos (2 Regular Tacos)", emoji: "🌮", cat: "fastfood", source: "FastFood", serveLabel: "2 tacos (162g)", serveG: 162, cal100: 210, pro100: 7.4, carb100: 21.0, fat100: 10.5 },
+  { name: "Jack in the Box Sourdough Jack", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (235g)", serveG: 235, cal100: 285, pro100: 13.6, carb100: 20.4, fat100: 16.6 },
+  { name: "Jack in the Box Spicy Chicken Sandwich", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 sandwich (220g)", serveG: 220, cal100: 259, pro100: 11.8, carb100: 24.5, fat100: 12.7 },
+  { name: "Jack in the Box Curly Fries (Medium)", emoji: "🍟", cat: "fastfood", source: "FastFood", serveLabel: "1 medium (128g)", serveG: 128, cal100: 312, pro100: 3.9, carb100: 35.2, fat100: 17.2 },
+  { name: "Chipotle Chicken Bowl (Rice, Black Beans, Salsa, Cheese, Lettuce)", emoji: "🥗", cat: "fastfood", source: "FastFood", serveLabel: "1 full bowl (510g)", serveG: 510, cal100: 137, pro100: 9.8, carb100: 13.7, fat100: 4.7 },
+  { name: "Chipotle Double Chicken Bowl (High Protein)", emoji: "🥗", cat: "fastfood", source: "FastFood", serveLabel: "1 double bowl (625g)", serveG: 625, cal100: 141, pro100: 13.1, carb100: 11.2, fat100: 4.8 },
+  { name: "Chipotle Steak Burrito (Full Wrapped)", emoji: "🌯", cat: "fastfood", source: "FastFood", serveLabel: "1 burrito (600g)", serveG: 600, cal100: 165, pro100: 9.0, carb100: 19.2, fat100: 5.8 },
+  { name: "Panda Express Plate (Teriyaki Chicken + Orange Chicken + Chow Mein)", emoji: "🥡", cat: "fastfood", source: "FastFood", serveLabel: "1 full plate (630g)", serveG: 630, cal100: 206, pro100: 10.6, carb100: 21.4, fat100: 8.6 },
+  { name: "Panda Express Grilled Teriyaki Chicken (Entree Only)", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "1 entree (170g)", serveG: 170, cal100: 162, pro100: 19.4, carb100: 8.2, fat100: 5.9 },
+  { name: "Panda Express Orange Chicken (Entree Only)", emoji: "🍊", cat: "fastfood", source: "FastFood", serveLabel: "1 entree (162g)", serveG: 162, cal100: 315, pro100: 16.0, carb100: 32.7, fat100: 14.2 },
+  { name: "Costco Food Court Hot Dog (Beef Dog + Bun)", emoji: "🌭", cat: "fastfood", source: "Costco Vault", serveLabel: "1 hot dog (212g)", serveG: 212, cal100: 268, pro100: 11.3, carb100: 21.7, fat100: 15.6 },
+  { name: "Costco Food Court Chicken Bake", emoji: "🥖", cat: "fastfood", source: "Costco Vault", serveLabel: "1 bake (315g)", serveG: 315, cal100: 266, pro100: 16.5, carb100: 25.4, fat100: 10.8 },
+  { name: "Costco Food Court Cheese / Pepperoni Pizza Slice", emoji: "🍕", cat: "fastfood", source: "Costco Vault", serveLabel: "1 huge slice (290g)", serveG: 290, cal100: 245, pro100: 13.8, carb100: 24.5, fat100: 10.3 },
+  { name: "Chick-fil-A Spicy Chicken Sandwich", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 sandwich (191g)", serveG: 191, cal100: 235, pro100: 14.7, carb100: 23.6, fat100: 9.9 },
+  { name: "Chick-fil-A Nuggets (12 Count)", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "12 nuggets (170g)", serveG: 170, cal100: 224, pro100: 23.5, carb100: 8.2, fat100: 10.6 },
+  { name: "Raising Cane's Box Combo (4 Fingers, Fries, Toast, Cane's Sauce)", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "1 Box Combo (540g)", serveG: 540, cal100: 231, pro100: 12.4, carb100: 19.6, fat100: 11.7 },
+  { name: "McDonald's McDouble", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (151g)", serveG: 151, cal100: 265, pro100: 14.6, carb100: 21.9, fat100: 13.2 },
+  { name: "McDonald's 10 Piece Chicken McNuggets", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "10 nuggets (160g)", serveG: 160, cal100: 256, pro100: 14.4, carb100: 16.3, fat100: 15.0 }
+];
 
-      { id: 'f_canes_box', emoji: '🍗', name: "Raising Cane's Box Combo", category: 'fast_food', baseGrams: 540, defaultGrams: 540, cal: 1250, pro: 67, carb: 101, fat: 65, fav: true, builtIn: true, unitName: 'Box Combo (540g)', unitGrams: 540, hint: '4 fingers, fries, toast, Cane sauce', keywords: 'raising canes box combo chicken tenders fingers' },
-      { id: 'f_canes_caniac', emoji: '🍗', name: "Raising Cane's Caniac Combo", category: 'fast_food', baseGrams: 780, defaultGrams: 780, cal: 1790, pro: 102, carb: 125, fat: 98, fav: false, builtIn: true, unitName: 'Caniac (780g)', unitGrams: 780, hint: '6 fingers, fries, toast, 2 sauces', keywords: 'raising canes caniac combo 6 piece' },
-      { id: 'f_canes_finger', emoji: '🍗', name: "Raising Cane's Chicken Finger (1pc)", category: 'fast_food', baseGrams: 63, defaultGrams: 252, cal: 130, pro: 13, carb: 5, fat: 6, fav: false, builtIn: true, unitName: 'Finger (63g)', unitGrams: 63, hint: '1 finger = 63g • 4 fingers = 252g', keywords: 'raising canes single chicken tender strip' },
-      { id: 'f_canes_toast', emoji: '🍞', name: "Raising Cane's Texas Toast", category: 'fast_food', baseGrams: 46, defaultGrams: 46, cal: 140, pro: 4, carb: 21, fat: 4.5, fav: false, builtIn: true, unitName: 'Toast (46g)', unitGrams: 46, hint: '1 slice Texas Toast = 46g', keywords: 'raising canes bread garlic toast' },
+let activeCategory = "all";
+let selectedFood = null;
+let searchTimeout = null;
 
-      { id: 'f_panda_teriyaki', emoji: '🍱', name: 'Panda Express Grilled Teriyaki Chicken', category: 'fast_food', baseGrams: 170, defaultGrams: 170, cal: 275, pro: 33, carb: 14, fat: 10, fav: false, builtIn: true, unitName: 'Entree (170g)', unitGrams: 170, hint: '1 entree scoop = 170g', keywords: 'panda express teriyaki chicken plate' },
-      { id: 'f_panda_orange', emoji: '🍊', name: 'Panda Express Orange Chicken', category: 'fast_food', baseGrams: 162, defaultGrams: 162, cal: 490, pro: 25, carb: 51, fat: 23, fav: false, builtIn: true, unitName: 'Entree (162g)', unitGrams: 162, hint: '1 entree scoop = 162g', keywords: 'panda express orange chicken' },
-      { id: 'f_panda_chowmein', emoji: '🍜', name: 'Panda Express Chow Mein (Side)', category: 'fast_food', baseGrams: 266, defaultGrams: 266, cal: 510, pro: 13, carb: 80, fat: 16, fav: false, builtIn: true, unitName: 'Side (266g)', unitGrams: 266, hint: '1 full side of noodles = 266g', keywords: 'panda express noodles fried rice' },
+// ===================== INITIALIZATION =====================
+function loadState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      state = { ...state, ...parsed };
+    } catch (e) { console.error("Restore error:", e); }
+  }
+  state.currentDate = new Date().toISOString().split('T')[0];
+  document.getElementById("datePicker").value = state.currentDate;
+}
 
-      { id: 'f_costco_slice', emoji: '🍕', name: 'Costco Food Court Pizza Slice', category: 'fast_food', baseGrams: 318, defaultGrams: 318, cal: 710, pro: 39, carb: 71, fat: 29, fav: false, builtIn: true, unitName: 'Slice (318g)', unitGrams: 318, hint: '1 giant Costco slice = 318g', keywords: 'costco pepperoni cheese pizza slice' },
-      { id: 'f_costco_bake', emoji: '🥖', name: 'Costco Chicken Bake', category: 'fast_food', baseGrams: 315, defaultGrams: 315, cal: 840, pro: 62, carb: 81, fat: 28, fav: false, builtIn: true, unitName: 'Bake (315g)', unitGrams: 315, hint: '1 Chicken Bake = 315g', keywords: 'costco food court chicken bake' },
-      { id: 'f_costco_hotdog', emoji: '🌭', name: 'Costco Quarter-Pound Hot Dog', category: 'fast_food', baseGrams: 205, defaultGrams: 205, cal: 550, pro: 24, carb: 46, fat: 31, fav: false, builtIn: true, unitName: 'Hot Dog (205g)', unitGrams: 205, hint: '1 hot dog + bun = 205g', keywords: 'costco food court beef hot dog' },
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
 
-      { id: 'f_mcd_mcdouble', emoji: '🍔', name: "McDonald's McDouble", category: 'fast_food', baseGrams: 152, defaultGrams: 152, cal: 400, pro: 22, carb: 33, fat: 20, fav: false, builtIn: true, unitName: 'Burger (152g)', unitGrams: 152, hint: '1 McDouble = 152g', keywords: 'mcdonalds mcd double cheeseburger' },
-      { id: 'f_mcd_qpc', emoji: '🍔', name: "McDonald's Quarter Pounder w/ Cheese", category: 'fast_food', baseGrams: 220, defaultGrams: 220, cal: 520, pro: 30, carb: 42, fat: 26, fav: false, builtIn: true, unitName: 'Burger (220g)', unitGrams: 220, hint: '1 Quarter Pounder = 220g', keywords: 'mcdonalds mcd big mac burger' },
-      { id: 'f_mcd_nuggets', emoji: '🍗', name: "McDonald's 10pc Chicken McNuggets", category: 'fast_food', baseGrams: 162, defaultGrams: 162, cal: 410, pro: 23, carb: 26, fat: 24, fav: false, builtIn: true, unitName: '10-Piece (162g)', unitGrams: 162, hint: '10 McNuggets = 162g', keywords: 'mcdonalds mcd nuggets 10 piece 20 piece' },
+function checkPin() {
+  const val = document.getElementById("pinInput").value.trim();
+  if (val === PASSCODE) {
+    sessionStorage.setItem("VAULT_UNLOCKED", "1");
+    unlockApp();
+  } else {
+    document.getElementById("pinError").classList.remove("hidden");
+  }
+}
 
-      { id: 'f_tb_quesadilla', emoji: '🧀', name: 'Taco Bell Chicken Quesadilla', category: 'fast_food', baseGrams: 184, defaultGrams: 184, cal: 520, pro: 26, carb: 41, fat: 27, fav: false, builtIn: true, unitName: 'Quesadilla (184g)', unitGrams: 184, hint: '1 whole quesadilla = 184g', keywords: 'taco bell tb steak chicken quesadilla' },
-      { id: 'f_tb_5layer', emoji: '🌯', name: 'Taco Bell Beefy 5-Layer Burrito', category: 'fast_food', baseGrams: 241, defaultGrams: 241, cal: 490, pro: 18, carb: 65, fat: 17, fav: false, builtIn: true, unitName: 'Burrito (241g)', unitGrams: 241, hint: '1 Beefy 5-Layer = 241g', keywords: 'taco bell tb five layer burrito cravings box' },
-      { id: 'f_jitb_tacos', emoji: '🌮', name: 'Jack in the Box 2 Tacos', category: 'fast_food', baseGrams: 168, defaultGrams: 168, cal: 340, pro: 12, carb: 34, fat: 17, fav: false, builtIn: true, unitName: '2 Tacos (168g)', unitGrams: 168, hint: '1 order (2 tacos) = 168g', keywords: 'jack in the box jitb monster taco' },
+document.getElementById("pinInput").addEventListener("keyup", (e) => {
+  if (e.key === "Enter" || e.target.value.length === 4) checkPin();
+});
 
-      // 🥤 SNACKS, SHAKES, DAIRY & FRUIT
-      { id: 'f_fairlife_30', emoji: '🍫', name: 'Fairlife Nutrition Plan Shake (30g P)', category: 'snacks_drinks', baseGrams: 340, defaultGrams: 340, cal: 150, pro: 30, carb: 4, fat: 2.5, fav: true, builtIn: true, unitName: 'Bottle (340g)', unitGrams: 340, hint: '1 bottle = 340g', keywords: 'costco fairlife chocolate protein shake drink' },
-      { id: 'f_fairlife_42', emoji: '🍼', name: 'Fairlife Core Power Elite (42g P)', category: 'snacks_drinks', baseGrams: 414, defaultGrams: 414, cal: 230, pro: 42, carb: 8, fat: 3.5, fav: false, builtIn: true, unitName: 'Bottle (414g)', unitGrams: 414, hint: '1 bottle = 414g', keywords: 'fairlife 42g chocolate vanilla strawberry shake' },
-      { id: 'f_premier_shake', emoji: '🥤', name: 'Premier Protein Shake (30g P)', category: 'snacks_drinks', baseGrams: 325, defaultGrams: 325, cal: 160, pro: 30, carb: 5, fat: 3, fav: false, builtIn: true, unitName: 'Carton (325g)', unitGrams: 325, hint: '1 carton = 325g', keywords: 'costco premier protein drink' },
-      { id: 'f_whey_scoop', emoji: '🥤', name: 'Whey Protein Powder Scoop', category: 'snacks_drinks', baseGrams: 32, defaultGrams: 32, cal: 120, pro: 24, carb: 3, fat: 1.5, fav: true, builtIn: true, unitName: 'Scoop (32g)', unitGrams: 32, hint: '1 scoop = 32g • 2 scoops = 64g', keywords: 'optimum nutrition gold standard isolate protein shake' },
-      { id: 'f_greek_yogurt', emoji: '🥣', name: 'Kirkland Nonfat Greek Yogurt', category: 'snacks_drinks', baseGrams: 170, defaultGrams: 170, cal: 100, pro: 18, carb: 7, fat: 0, fav: true, builtIn: true, unitName: 'Bowl (170g)', unitGrams: 170, hint: '3/4 cup serving = 170g', keywords: 'costco fage chobani plain greek yogurt' },
-      { id: 'f_oikos_pro', emoji: '🥣', name: 'Oikos Pro Yogurt Cup (20g P)', category: 'snacks_drinks', baseGrams: 150, defaultGrams: 150, cal: 140, pro: 20, carb: 8, fat: 3, fav: false, builtIn: true, unitName: 'Cup (150g)', unitGrams: 150, hint: '1 yogurt cup = 150g', keywords: 'oikos triple zero greek yogurt' },
-      { id: 'f_cottage_cheese', emoji: '🥣', name: 'Lowfat Cottage Cheese', category: 'snacks_drinks', baseGrams: 113, defaultGrams: 113, cal: 90, pro: 13, carb: 5, fat: 2.5, fav: false, builtIn: true, unitName: '1/2 Cup (113g)', unitGrams: 113, hint: '1/2 cup = 113g', keywords: 'good culture dairy cottage cheese' },
-      { id: 'f_kirkland_bar', emoji: '🍫', name: 'Kirkland / Barebells Protein Bar', category: 'snacks_drinks', baseGrams: 60, defaultGrams: 60, cal: 190, pro: 21, carb: 22, fat: 7, fav: false, builtIn: true, unitName: 'Bar (60g)', unitGrams: 60, hint: '1 bar = 60g', keywords: 'costco quest built pure protein bar snack' },
-      { id: 'f_beef_jerky', emoji: '🥩', name: 'Kirkland Beef Jerky / Meat Stick', category: 'snacks_drinks', baseGrams: 28, defaultGrams: 56, cal: 80, pro: 11, carb: 5, fat: 1, fav: false, builtIn: true, unitName: 'Oz (28g)', unitGrams: 28, hint: '1 oz = 28g • 2 oz = 56g', keywords: 'chomps beef stick biltong jerky' },
-      { id: 'f_peanut_butter', emoji: '🥜', name: 'Peanut Butter (2 Tbsp)', category: 'snacks_drinks', baseGrams: 32, defaultGrams: 32, cal: 190, pro: 7, carb: 7, fat: 16, fav: true, builtIn: true, unitName: '2 Tbsp (32g)', unitGrams: 32, hint: '1 tbsp = 16g • 2 tbsp = 32g', keywords: 'pb jif skippy kirkland almond butter' },
-      { id: 'f_almonds', emoji: '🥜', name: 'Almonds / Mixed Nuts', category: 'snacks_drinks', baseGrams: 28, defaultGrams: 28, cal: 165, pro: 6, carb: 6, fat: 14, fav: false, builtIn: true, unitName: 'Handful (28g)', unitGrams: 28, hint: '1 oz handful = 28g', keywords: 'cashews peanuts trail mix' },
-      { id: 'f_banana', emoji: '🍌', name: 'Banana', category: 'snacks_drinks', baseGrams: 120, defaultGrams: 120, cal: 107, pro: 1.3, carb: 27, fat: 0.4, fav: true, builtIn: true, unitName: 'Banana (120g)', unitGrams: 120, hint: '1 medium banana ≈ 120g', keywords: 'fruit' },
-      { id: 'f_apple', emoji: '🍎', name: 'Apple', category: 'snacks_drinks', baseGrams: 180, defaultGrams: 180, cal: 95, pro: 0.5, carb: 25, fat: 0.3, fav: false, builtIn: true, unitName: 'Apple (180g)', unitGrams: 180, hint: '1 medium apple ≈ 180g', keywords: 'honeycrisp gala fuji fruit' },
-      { id: 'f_berries', emoji: '🍓', name: 'Strawberries / Blueberries', category: 'snacks_drinks', baseGrams: 140, defaultGrams: 140, cal: 65, pro: 1, carb: 15, fat: 0.4, fav: false, builtIn: true, unitName: 'Cup (140g)', unitGrams: 140, hint: '1 cup berries ≈ 140g', keywords: 'fruit raspberries blackberries' },
-      { id: 'f_fairlife_milk', emoji: '🥛', name: 'Fairlife 2% Milk (1 Cup)', category: 'snacks_drinks', baseGrams: 240, defaultGrams: 240, cal: 120, pro: 13, carb: 6, fat: 4.5, fav: false, builtIn: true, unitName: 'Cup (240g)', unitGrams: 240, hint: '1 cup = 240g', keywords: 'ultra filtered high protein milk' },
-      { id: 'f_whole_milk', emoji: '🥛', name: 'Whole Milk (1 Cup)', category: 'snacks_drinks', baseGrams: 240, defaultGrams: 240, cal: 150, pro: 8, carb: 12, fat: 8, fav: false, builtIn: true, unitName: 'Cup (240g)', unitGrams: 240, hint: '1 cup = 240g', keywords: 'vitamin d milk dairy' },
-      { id: 'f_string_cheese', emoji: '🧀', name: 'Mozzarella String Cheese', category: 'snacks_drinks', baseGrams: 28, defaultGrams: 28, cal: 80, pro: 7, carb: 1, fat: 5, fav: false, builtIn: true, unitName: 'Stick (28g)', unitGrams: 28, hint: '1 stick = 28g', keywords: 'cheese stick snack' },
-      { id: 'f_rice_cakes', emoji: '🍘', name: 'Quaker Rice Cakes (2 Cakes)', category: 'snacks_drinks', baseGrams: 18, defaultGrams: 18, cal: 70, pro: 1.5, carb: 15, fat: 0.5, fav: false, builtIn: true, unitName: '2 Cakes (18g)', unitGrams: 18, hint: '1 cake = 9g • 2 cakes = 18g', keywords: 'caramel lightly salted rice cake preworkout carb' }
-    ];
+function unlockApp() {
+  document.getElementById("lockScreen").classList.add("hidden");
+  document.getElementById("appContent").classList.remove("hidden");
+  loadState();
+  renderAll();
+  renderSearchResults(getCombinedLocalCatalog());
+}
 
-    // ========================================================
-    // SMART FORGIVING SEARCH ENGINE (TYPOS, HYPHENS, SLANG)
-    // ========================================================
-    const TYPO_AND_SLANG_MAP = {
-      'chipolte': 'chipotle',
-      'chiptole': 'chipotle',
-      'chiken': 'chicken',
-      'chikn': 'chicken',
-      'rotiserie': 'rotisserie',
-      'rotisery': 'rotisserie',
-      'protien': 'protein',
-      'proteen': 'protein',
-      'quesadila': 'quesadilla',
-      'quesidilla': 'quesadilla',
-      'burito': 'burrito',
-      'yogert': 'yogurt',
-      'yougurt': 'yogurt',
-      'sandwhich': 'sandwich',
-      'samwich': 'sandwich',
-      'fettucine': 'fettuccine',
-      'spagetti': 'spaghetti',
-      'avacado': 'avocado',
-      'guac': 'guacamole',
-      'brocoli': 'broccoli',
-      'bananna': 'banana',
-      'cfa': 'chick fil a',
-      'chickfila': 'chick fil a',
-      'innout': 'in n out',
-      'inandout': 'in n out',
-      'doubledouble': 'double double',
-      'canes': 'raising canes',
-      'jitb': 'jack in the box',
-      'tb': 'taco bell',
-      'mcd': 'mcdonalds',
-      'mcds': 'mcdonalds',
-      'pb': 'peanut butter'
-    };
+if (sessionStorage.getItem("VAULT_UNLOCKED") === "1") {
+  unlockApp();
+}
 
-    // Strip punctuation (hyphens, apostrophes, slashes) so "Double-Double" === "double double"
-    function normalizeSearchText(str) {
-      return String(str || '')
-        .toLowerCase()
-        .replace(/['’`]/g, '')
-        .replace(/[-_/+&,().]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-    }
+// ===================== USER & GOAL CALCULATIONS =====================
+function switchUser(user) {
+  state.currentUser = user;
+  saveState();
+  renderAll();
+}
 
-    // Expand slang, merged words, and common high-school typos
-    function cleanAndExpandQuery(rawQuery) {
-      let norm = normalizeSearchText(rawQuery);
-      if (!norm) return { cleanedQuery: '', tokens: [] };
+function changeDate(dateStr) {
+  state.currentDate = dateStr;
+  renderAll();
+}
 
-      // Phrase-level replacements
-      norm = norm
-        .replace(/\bin\s*and\s*out\b/g, 'in n out')
-        .replace(/\bchick\s*fil\s*a\b/g, 'chick fil a')
-        .replace(/\b3\s*by\s*3\b/g, '3x3')
-        .replace(/\b4\s*by\s*4\b/g, '4x4');
+function getMacroGoals(weightLbs, goalType) {
+  const w = Number(weightLbs) || 154;
+  if (goalType === "bulk") {
+    const cal = Math.round(w * 18);
+    const pro = Math.round(w * 1.05);
+    const fat = Math.round(w * 0.55);
+    const carb = Math.round((cal - (pro * 4 + fat * 9)) / 4);
+    return { cal, pro, carb, fat };
+  } else if (goalType === "recomp") {
+    const cal = Math.round(w * 15);
+    const pro = Math.round(w * 1.1);
+    const fat = Math.round(w * 0.45);
+    const carb = Math.round((cal - (pro * 4 + fat * 9)) / 4);
+    return { cal, pro, carb, fat };
+  } else {
+    const cal = Math.round(w * 12.8);
+    const pro = Math.round(w * 1.15);
+    const fat = Math.round(w * 0.4);
+    const carb = Math.round((cal - (pro * 4 + fat * 9)) / 4);
+    return { cal, pro, carb, fat };
+  }
+}
 
-      const rawTokens = norm.split(' ').filter(Boolean);
-      const expandedTokens = [];
+function updateProfileSettings() {
+  const w = parseFloat(document.getElementById("weightInput").value) || 150;
+  const g = document.getElementById("goalSelect").value;
+  state.profiles[state.currentUser] = { weight: w, goal: g };
+  saveState();
+  renderAll();
+}
 
-      rawTokens.forEach(t => {
-        if (TYPO_AND_SLANG_MAP[t]) {
-          TYPO_AND_SLANG_MAP[t].split(' ').forEach(sub => expandedTokens.push(sub));
-        } else {
-          expandedTokens.push(t);
-        }
-      });
+// ===================== MULTI-DATABASE SMART SEARCH =====================
+function normalizeText(str) {
+  return (str || "").toLowerCase().replace(/[-_.,'"]/g, " ").replace(/\s+/g, " ").trim();
+}
 
-      return {
-        cleanedQuery: expandedTokens.join(' '),
-        tokens: expandedTokens
-      };
-    }
+function getCombinedLocalCatalog() {
+  return [...state.customFoods, ...BUILTIN_CATALOG];
+}
 
-    // Levenshtein distance for fuzzy typo matching (e.g. 1-letter off)
-    function levenshteinDistance(a, b) {
-      if (a === b) return 0;
-      if (!a.length) return b.length;
-      if (!b.length) return a.length;
-      const matrix = [];
-      for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-      for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-          if (b.charAt(i - 1) === a.charAt(j - 1)) {
-            matrix[i][j] = matrix[i - 1][j - 1];
-          } else {
-            matrix[i][j] = Math.min(
-              matrix[i - 1][j - 1] + 1,
-              matrix[i][j - 1] + 1,
-              matrix[i - 1][j] + 1
-            );
-          }
-        }
-      }
-      return matrix[b.length][a.length];
-    }
+function filterCategory(cat) {
+  activeCategory = cat;
+  document.querySelectorAll(".cat-btn").forEach(btn => {
+    btn.className = "cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0";
+  });
+  event.target.className = "cat-btn bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold shrink-0";
 
-    // Score a food object against the user's query (0 = no match, higher = better match)
-    function scoreFoodMatch(food, rawQuery) {
-      const { cleanedQuery, tokens } = cleanAndExpandQuery(rawQuery);
-      if (!tokens.length) return 1;
+  const q = document.getElementById("searchInput").value;
+  if (q.trim()) {
+    handleSearchInput(q);
+  } else {
+    const all = getCombinedLocalCatalog();
+    renderSearchResults(cat === "all" ? all : all.filter(f => f.cat === cat));
+  }
+}
 
-      const nameNorm = normalizeSearchText(food.name);
-      const nameCompact = nameNorm.replace(/\s+/g, '');
-      const queryCompact = cleanedQuery.replace(/\s+/g, '');
-      const fullHaystack = normalizeSearchText(`${food.name} ${food.keywords || ''} ${food.hint || ''} ${food.category || ''}`);
-      const haystackWords = fullHaystack.split(' ').filter(Boolean);
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  document.getElementById("apiStatus").classList.add("hidden");
+  const all = getCombinedLocalCatalog();
+  renderSearchResults(activeCategory === "all" ? all : all.filter(f => f.cat === activeCategory));
+}
 
-      // 1. Exact or compact substring match in the food title (e.g. "double double" or "doubledouble")
-      if (nameNorm.includes(cleanedQuery) || (queryCompact.length >= 4 && nameCompact.includes(queryCompact))) {
-        return 200 + (food.fav ? 15 : 0);
-      }
+function scoreLocalMatch(item, queryTokens) {
+  const normName = normalizeText(item.name);
+  let score = 0;
+  for (const t of queryTokens) {
+    if (normName.includes(t)) score += 15;
+    if (normName.startsWith(t)) score += 10;
+  }
+  return score;
+}
 
-      // 2. Check every query token (in any order) with prefix & typo tolerance
-      let totalScore = 0;
-      for (const qToken of tokens) {
-        if (fullHaystack.includes(qToken)) {
-          totalScore += nameNorm.includes(qToken) ? 35 : 20;
-          continue;
-        }
+function handleSearchInput(rawQuery) {
+  clearTimeout(searchTimeout);
+  const normQ = normalizeText(rawQuery);
+  if (!normQ) {
+    clearSearch();
+    return;
+  }
 
-        // Fuzzy word check for typos on tokens >= 4 chars
-        let fuzzyMatched = false;
-        if (qToken.length >= 4) {
-          const maxDist = qToken.length >= 7 ? 2 : 1;
-          for (const hWord of haystackWords) {
-            if (Math.abs(hWord.length - qToken.length) <= maxDist) {
-              if (levenshteinDistance(qToken, hWord) <= maxDist) {
-                fuzzyMatched = true;
-                totalScore += 14;
-                break;
-              }
-            }
-          }
-        }
+  const tokens = normQ.split(" ").filter(Boolean);
+  const localMatches = getCombinedLocalCatalog()
+    .map(item => ({ item, score: scoreLocalMatch(item, tokens) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(x => x.item);
 
-        if (!fuzzyMatched) {
-          return 0; // Token did not match even with fuzzy tolerance
-        }
-      }
+  renderSearchResults(localMatches);
 
-      return totalScore + (food.fav ? 10 : 0);
-    }
+  // Trigger multi-database online search after 280ms
+  searchTimeout = setTimeout(() => {
+    fetchOnlineDatabases(rawQuery, localMatches);
+  }, 280);
+}
 
-    function smartFilterFoods(foodArray, rawQuery) {
-      return foodArray
-        .map(f => ({ food: f, score: scoreFoodMatch(f, rawQuery) }))
-        .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .map(item => item.food);
-    }
+async function fetchOnlineDatabases(query, existingLocal) {
+  const statusEl = document.getElementById("apiStatus");
+  statusEl.classList.remove("hidden");
+  statusEl.textContent = `🌐 Searching USDA Survey (Prepared Dishes), USDA Raw, Branded & OpenFoodFacts for "${query}"...`;
 
-    function applyQuickSearch(term) {
-      const input = document.getElementById('foodSearchInput');
-      input.value = term;
-      handleSearchInput(term);
-    }
+  try {
+    // 1. USDA FoodData Central: Querying Survey (FNDDS) for cooked/prepared foods (like scrambled eggs), Foundation/SR Legacy for raw, and Branded
+    const usdaPreparedUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(query)}&dataType=Survey%20(FNDDS),Foundation,SR%20Legacy&pageSize=18`;
+    const usdaBrandedUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(query)}&dataType=Branded&pageSize=10`;
+    // 2. OpenFoodFacts Global Grocery & Restaurant Database
+    const offUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=12`;
 
-    function getTodayStr() {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    }
+    const [usdaPrepRes, usdaBrandRes, offRes] = await Promise.allSettled([
+      fetch(usdaPreparedUrl).then(r => r.json()),
+      fetch(usdaBrandedUrl).then(r => r.json()),
+      fetch(offUrl).then(r => r.json())
+    ]);
 
-    // Automatic Weight-Based Targets
-    // Bulk: 18 kcal/lb, 1.1g P/lb, 2.4g C/lb, 0.45g F/lb
-    // Cut: 13.5 kcal/lb, 1.2g P/lb, 1.35g C/lb, 0.38g F/lb
-    function getAutoGoals(weightLbs, phase) {
-      const w = Number(weightLbs) || 150;
-      if (phase === 'cut' || phase === 'shred') {
-        return {
-          cal: Math.round(w * 13.5),
-          pro: Math.round(w * 1.2),
-          carb: Math.round(w * 1.35),
-          fat: Math.round(w * 0.38)
+    const onlineItems = [];
+
+    const parseUsdaList = (foods, defaultBadge) => {
+      if (!Array.isArray(foods)) return;
+      foods.forEach(f => {
+        const getNut = (ids) => {
+          const found = (f.foodNutrients || []).find(n => ids.includes(n.nutrientId) || ids.includes(n.nutrientNumber));
+          return found ? Number(found.value || 0) : 0;
         };
-      }
-      return {
-        cal: Math.round(w * 18),
-        pro: Math.round(w * 1.1),
-        carb: Math.round(w * 2.4),
-        fat: Math.round(w * 0.45)
-      };
-    }
+        const cal = getNut([1008, "208"]);
+        const pro = getNut([1003, "203"]);
+        const carb = getNut([1005, "205"]);
+        const fat = getNut([1004, "204"]);
+        if (cal === 0 && pro === 0 && carb === 0) return;
 
-    let state = {
-      activeBrother: 'ryan',
-      selectedDate: getTodayStr(),
-      activeCategory: 'favorites',
-      searchQuery: '',
-      onlineResults: [],
-      foods: [...DEFAULT_FOODS],
-      profiles: {
-        ryan: { name: 'Ryan', weight: 154, phase: 'bulk', days: {} },
-        eric: { name: 'Eric', weight: 151, phase: 'bulk', days: {} }
-      }
-    };
+        const isPrepared = (f.dataType || "").includes("Survey");
+        const serveG = Number(f.servingSize) > 0 ? Math.round(f.servingSize) : 100;
+        const serveLabel = f.householdServingFullText
+          ? `${f.householdServingFullText} (${serveG}g)`
+          : `${serveG}g serving`;
 
-    // ========================================================
-    // 1. PASSCODE LOCK SCREEN (`4582`)
-    // ========================================================
-    function initPasscode() {
-      if (localStorage.getItem(PIN_KEY) === 'true') {
-        document.getElementById('passcodeOverlay').classList.add('hidden');
-      }
-
-      window.addEventListener('keydown', (e) => {
-        if (document.getElementById('passcodeOverlay').classList.contains('hidden')) return;
-        if (e.key >= '0' && e.key <= '9') {
-          e.preventDefault();
-          pressPin(e.key);
-        } else if (e.key === 'Backspace') {
-          e.preventDefault();
-          backspacePin();
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          clearPin();
-        }
-      });
-    }
-
-    function pressPin(digit) {
-      if (enteredPin.length >= 4) return;
-      enteredPin += digit;
-      document.getElementById('pinError').style.opacity = '0';
-      renderPinDots();
-      if (enteredPin.length === 4) {
-        setTimeout(checkPin, 110);
-      }
-    }
-
-    function backspacePin() {
-      enteredPin = enteredPin.slice(0, -1);
-      renderPinDots();
-    }
-
-    function clearPin() {
-      enteredPin = '';
-      renderPinDots();
-    }
-
-    function renderPinDots() {
-      const dots = document.querySelectorAll('#pinDots .pin-dot');
-      dots.forEach((dot, idx) => {
-        dot.className = idx < enteredPin.length
-          ? 'pin-dot w-4 h-4 rounded-full border-2 border-sky-400 bg-sky-400 scale-110 transition-all'
-          : 'pin-dot w-4 h-4 rounded-full border-2 border-slate-500 bg-slate-900 transition-all';
-      });
-    }
-
-    function checkPin() {
-      if (enteredPin === PASSCODE) {
-        if (document.getElementById('rememberPinBox').checked) {
-          localStorage.setItem(PIN_KEY, 'true');
-        }
-        document.getElementById('passcodeOverlay').classList.add('hidden');
-        enteredPin = '';
-        renderPinDots();
-        toast('Unlocked! Welcome Ryan & Eric 💪');
-      } else {
-        const box = document.getElementById('passcodeBox');
-        box.classList.remove('animate-shake');
-        void box.offsetWidth;
-        box.classList.add('animate-shake');
-        document.getElementById('pinError').style.opacity = '1';
-        enteredPin = '';
-        renderPinDots();
-      }
-    }
-
-    function lockApp() {
-      localStorage.removeItem(PIN_KEY);
-      enteredPin = '';
-      renderPinDots();
-      document.getElementById('passcodeOverlay').classList.remove('hidden');
-    }
-
-    // ========================================================
-    // STORAGE & AUTOMATIC MIGRATION FROM PREVIOUS VERSIONS
-    // ========================================================
-    function loadData() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.profiles) {
-            state.profiles = parsed.profiles;
-            if (parsed.activeBrother) state.activeBrother = parsed.activeBrother;
-            if (Array.isArray(parsed.foods)) {
-              state.foods = mergeFoodLists(DEFAULT_FOODS, parsed.foods);
-            }
-            return;
-          }
-        }
-
-        // Check older keys so nothing is lost when updating index.html
-        for (const oldKey of LEGACY_KEYS) {
-          const oldRaw = localStorage.getItem(oldKey);
-          if (oldRaw) {
-            const oldParsed = JSON.parse(oldRaw);
-            if (oldParsed && oldParsed.profiles) {
-              ['ryan', 'eric'].forEach(bro => {
-                if (oldParsed.profiles[bro]) {
-                  state.profiles[bro].days = oldParsed.profiles[bro].days || {};
-                  if (oldParsed.profiles[bro].weight) state.profiles[bro].weight = oldParsed.profiles[bro].weight;
-                  const oldPhase = oldParsed.profiles[bro].phase || oldParsed.profiles[bro].activePhase || 'bulk';
-                  state.profiles[bro].phase = oldPhase === 'shred' ? 'cut' : oldPhase;
-                }
-              });
-              const oldFoods = oldParsed.foods || oldParsed.foodVault || [];
-              if (Array.isArray(oldFoods) && oldFoods.length > 0) {
-                state.foods = mergeFoodLists(DEFAULT_FOODS, oldFoods);
-              }
-              saveData();
-              break;
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Load error:', e);
-      }
-    }
-
-    function mergeFoodLists(defaults, saved) {
-      const map = new Map();
-      defaults.forEach(f => map.set(f.id, { ...f }));
-      saved.forEach(f => {
-        const existing = map.get(f.id) || {};
-        map.set(f.id, {
-          ...existing,
-          ...f,
-          emoji: f.emoji || existing.emoji || guessEmoji(f.name),
-          category: f.category || existing.category || 'favorites',
-          baseGrams: Number(f.baseGrams) || 100
+        onlineItems.push({
+          name: f.brandOwner ? `${f.description} (${f.brandOwner})` : f.description,
+          emoji: isPrepared ? "🍳" : "🥩",
+          cat: "all",
+          source: isPrepared ? "USDA Prepared" : defaultBadge,
+          serveLabel,
+          serveG,
+          cal100: Math.round(cal),
+          pro100: Number(pro.toFixed(1)),
+          carb100: Number(carb.toFixed(1)),
+          fat100: Number(fat.toFixed(1))
         });
       });
-      return Array.from(map.values());
-    }
-
-    function saveData() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          version: 5,
-          activeBrother: state.activeBrother,
-          foods: state.foods,
-          profiles: state.profiles
-        }));
-      } catch (e) {
-        console.error('Save error:', e);
-      }
-    }
-
-    function guessEmoji(name) {
-      const n = String(name || '').toLowerCase();
-      if (n.includes('chipotle') || n.includes('burrito')) return '🌯';
-      if (n.includes('chicken') || n.includes('nugget') || n.includes('rotisserie') || n.includes('wing')) return '🍗';
-      if (n.includes('steak') || n.includes('beef') || n.includes('sirloin') || n.includes('ribeye')) return '🥩';
-      if (n.includes('burger') || n.includes('mcdouble') || n.includes('double-double')) return '🍔';
-      if (n.includes('egg')) return '🥚';
-      if (n.includes('rice')) return '🍚';
-      if (n.includes('oat') || n.includes('cereal') || n.includes('yogurt')) return '🥣';
-      if (n.includes('shake') || n.includes('whey') || n.includes('fairlife') || n.includes('milk')) return '🥤';
-      if (n.includes('bagel')) return '🥯';
-      if (n.includes('bread') || n.includes('toast')) return '🍞';
-      if (n.includes('pizza')) return '🍕';
-      if (n.includes('salmon') || n.includes('tuna') || n.includes('fish')) return '🐟';
-      if (n.includes('banana')) return '🍌';
-      if (n.includes('apple')) return '🍎';
-      if (n.includes('avocado')) return '🥑';
-      if (n.includes('cheese')) return '🧀';
-      if (n.includes('bacon')) return '🥓';
-      if (n.includes('pasta') || n.includes('spaghetti')) return '🍝';
-      if (n.includes('potato') || n.includes('fries')) return '🍟';
-      return '🍽️';
-    }
-
-    function toast(msg) {
-      const box = document.getElementById('toastBox');
-      const el = document.createElement('div');
-      el.className = 'bg-slate-900/95 border-2 border-emerald-400/50 text-white px-4 py-3 rounded-2xl shadow-2xl text-xs sm:text-sm font-extrabold flex items-center gap-2';
-      el.innerHTML = `<span>✅</span><span>${msg}</span>`;
-      box.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = '0';
-        el.style.transition = 'opacity 0.25s';
-        setTimeout(() => el.remove(), 250);
-      }, 2200);
-    }
-
-    // ========================================================
-    // 2. BROTHER SWITCHER, WEIGHT, PHASE & DATE
-    // ========================================================
-    function switchBrother(broKey) {
-      state.activeBrother = broKey;
-      saveData();
-      renderAll();
-    }
-
-    function adjustWeight(delta) {
-      const bro = state.profiles[state.activeBrother];
-      bro.weight = Math.max(80, Math.round((Number(bro.weight) + delta) * 10) / 10);
-      saveData();
-      renderAll();
-    }
-
-    function updateWeightInput(val) {
-      const num = parseFloat(val);
-      if (isNaN(num) || num < 60) {
-        renderAll();
-        return;
-      }
-      state.profiles[state.activeBrother].weight = Math.round(num * 10) / 10;
-      saveData();
-      renderAll();
-    }
-
-    function setPhase(phase) {
-      const bro = state.profiles[state.activeBrother];
-      bro.phase = phase;
-      saveData();
-      renderAll();
-      toast(`${bro.name} switched to ${phase === 'bulk' ? '💪 Bulk (Grow Muscle)' : '⚡ Cut (Get Shredded)'}`);
-    }
-
-    function changeDay(offset) {
-      const parts = state.selectedDate.split('-').map(Number);
-      const dt = new Date(parts[0], parts[1] - 1, parts[2]);
-      dt.setDate(dt.getDate() + offset);
-      state.selectedDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-      renderAll();
-    }
-
-    function setDay(val) {
-      if (!val) return;
-      state.selectedDate = val;
-      renderAll();
-    }
-
-    function goToToday() {
-      state.selectedDate = getTodayStr();
-      renderAll();
-    }
-
-    // ========================================================
-    // 3. FOOD SEARCH & AUTOMATIC LIVE DATABASE LOOKUP
-    // ========================================================
-    function setCategory(cat) {
-      state.activeCategory = cat;
-      renderFoodGrid();
-    }
-
-    function handleSearchInput(val) {
-      state.searchQuery = val.trim();
-      const clearBtn = document.getElementById('clearSearchBtn');
-      const onlineSec = document.getElementById('onlineSearchSection');
-
-      if (state.searchQuery.length > 0) {
-        clearBtn.classList.remove('hidden');
-        clearBtn.classList.add('flex');
-      } else {
-        clearBtn.classList.add('hidden');
-        clearBtn.classList.remove('flex');
-        onlineSec.classList.add('hidden');
-      }
-
-      renderFoodGrid();
-
-      if (searchDebounce) clearTimeout(searchDebounce);
-      if (state.searchQuery.length >= 2) {
-        searchDebounce = setTimeout(() => {
-          searchMoreFoodsOnline(state.searchQuery);
-        }, 400);
-      }
-    }
-
-    function clearSearch() {
-      document.getElementById('foodSearchInput').value = '';
-      state.searchQuery = '';
-      state.onlineResults = [];
-      document.getElementById('clearSearchBtn').classList.add('hidden');
-      document.getElementById('onlineSearchSection').classList.add('hidden');
-      const badge = document.getElementById('smartSearchBadge');
-      if (badge) badge.classList.add('hidden');
-      renderFoodGrid();
-    }
-
-    async function searchMoreFoodsOnline(query) {
-      const onlineSec = document.getElementById('onlineSearchSection');
-      const statusEl = document.getElementById('onlineSearchStatus');
-      const gridEl = document.getElementById('onlineFoodGrid');
-
-      // Normalize hyphens & expand abbreviations so USDA & OpenFoodFacts understand the query
-      const { cleanedQuery } = cleanAndExpandQuery(query);
-      const apiQuery = cleanedQuery || query;
-
-      onlineSec.classList.remove('hidden');
-      statusEl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-sky-400"></i><span>Searching online database for "${escapeHtml(apiQuery)}"...</span>`;
-      gridEl.innerHTML = '';
-
-      try {
-        const usdaUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(apiQuery)}&pageSize=10`;
-        const offUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(apiQuery)}&search_simple=1&action=process&json=1&page_size=10&fields=product_name,brands,nutriments`;
-
-        const [usdaRes, offRes] = await Promise.allSettled([
-          fetch(usdaUrl).then(r => r.ok ? r.json() : null),
-          fetch(offUrl).then(r => r.ok ? r.json() : null)
-        ]);
-
-        const results = [];
-        const seen = new Set();
-
-        if (usdaRes.status === 'fulfilled' && usdaRes.value && Array.isArray(usdaRes.value.foods)) {
-          usdaRes.value.foods.forEach((item, idx) => {
-            const nut = item.foodNutrients || [];
-            const getVal = (ids) => {
-              const found = nut.find(n => ids.includes(n.nutrientId) || ids.includes(Number(n.nutrientNumber)));
-              return found ? Number(found.value) || 0 : 0;
-            };
-            const pro = Math.round(getVal([1003, 203]) * 10) / 10;
-            const carb = Math.round(getVal([1005, 205]) * 10) / 10;
-            const fat = Math.round(getVal([1004, 204]) * 10) / 10;
-            let cal = Math.round(getVal([1008, 208, 2047]));
-            if (!cal && (pro || carb || fat)) cal = Math.round(pro * 4 + carb * 4 + fat * 9);
-            if (cal <= 0 && pro <= 0) return;
-
-            const title = cleanFoodName(item.description, item.brandOwner || item.brandName);
-            const key = `${title.toLowerCase()}_${cal}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-
-            results.push({
-              id: `online_u_${idx}_${Date.now()}`,
-              emoji: guessEmoji(title),
-              name: title,
-              baseGrams: 100,
-              defaultGrams: 100,
-              cal,
-              pro,
-              carb,
-              fat,
-              hint: `${cal} Cal • ${pro}g Protein per 100g`
-            });
-          });
-        }
-
-        if (offRes.status === 'fulfilled' && offRes.value && Array.isArray(offRes.value.products)) {
-          offRes.value.products.forEach((p, idx) => {
-            if (!p.product_name) return;
-            const nut = p.nutriments || {};
-            const pro = Math.round((Number(nut.proteins_100g) || 0) * 10) / 10;
-            const carb = Math.round((Number(nut.carbohydrates_100g) || 0) * 10) / 10;
-            const fat = Math.round((Number(nut.fat_100g) || 0) * 10) / 10;
-            let cal = Math.round(Number(nut['energy-kcal_100g']) || 0);
-            if (!cal && (pro || carb || fat)) cal = Math.round(pro * 4 + carb * 4 + fat * 9);
-            if (cal <= 0 && pro <= 0) return;
-
-            const title = cleanFoodName(p.product_name, p.brands);
-            const key = `${title.toLowerCase()}_${cal}`;
-            if (seen.has(key)) return;
-            seen.add(key);
-
-            results.push({
-              id: `online_o_${idx}_${Date.now()}`,
-              emoji: guessEmoji(title),
-              name: title,
-              baseGrams: 100,
-              defaultGrams: 100,
-              cal,
-              pro,
-              carb,
-              fat,
-              hint: `${cal} Cal • ${pro}g Protein per 100g`
-            });
-          });
-        }
-
-        // Rank online results using the smart search scorer so best matches appear at the top
-        results.sort((a, b) => scoreFoodMatch(b, apiQuery) - scoreFoodMatch(a, apiQuery));
-        state.onlineResults = results.slice(0, 10);
-
-        if (state.onlineResults.length === 0) {
-          statusEl.innerHTML = `<span>Showing instant matches above — or tap ➕ Custom Food to add your own!</span>`;
-          return;
-        }
-
-        statusEl.innerHTML = `<span>🌐 Extra Online Results for "${escapeHtml(apiQuery)}" (Tap to log)</span>`;
-        gridEl.innerHTML = state.onlineResults
-          .map(f => `
-            <div
-              onclick="openPortionModal('${f.id}', true)"
-              class="tap-btn cursor-pointer bg-slate-900/95 hover:bg-slate-800 p-3 rounded-2xl border border-slate-700 flex items-center justify-between gap-2"
-            >
-              <div class="flex items-center gap-2.5 min-w-0">
-                <span class="text-2xl shrink-0">${f.emoji}</span>
-                <div class="min-w-0">
-                  <h4 class="text-xs sm:text-sm font-extrabold text-white truncate">${escapeHtml(f.name)}</h4>
-                  <p class="text-[11px] font-bold text-slate-400">${f.cal} Cal • <span class="text-rose-300">${f.pro}g Protein</span> (100g)</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onclick="pinOnlineFood('${f.id}', event)"
-                class="shrink-0 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-amber-500/20 text-amber-300 border border-slate-700 text-xs font-extrabold"
-                title="Pin to Favorites"
-              >
-                ⭐ Pin
-              </button>
-            </div>
-          `)
-          .join('');
-      } catch (e) {
-        statusEl.innerHTML = `<span>Showing built-in foods above</span>`;
-      }
-    }
-
-    function cleanFoodName(rawName, rawBrand) {
-      let name = String(rawName || '').trim();
-      if (name === name.toUpperCase() && name.length > 4) {
-        name = name.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-      }
-      let brand = String(rawBrand || '').split(',')[0].trim();
-      if (brand && brand.length > 2 && !name.toLowerCase().includes(brand.toLowerCase())) {
-        if (brand === brand.toUpperCase()) {
-          brand = brand.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-        }
-        return `${brand} ${name}`;
-      }
-      return name;
-    }
-
-    function pinOnlineFood(onlineId, e) {
-      if (e) e.stopPropagation();
-      const found = state.onlineResults.find(f => f.id === onlineId);
-      if (!found) return;
-
-      const newFood = {
-        ...found,
-        id: 'custom_' + Date.now(),
-        category: 'favorites',
-        fav: true,
-        builtIn: false
-      };
-      state.foods.unshift(newFood);
-      saveData();
-      renderFoodGrid();
-      toast(`⭐ Pinned "${found.name}" to Favorites!`);
-    }
-
-    // ========================================================
-    // 4. FRIENDLY PORTION PICKER MODAL
-    // ========================================================
-    function openPortionModal(foodId, isOnline = false, existingLogItem = null) {
-      editingLogEntryId = existingLogItem ? existingLogItem.id : null;
-
-      let food = null;
-      if (existingLogItem) {
-        // Re-construct temporary food from logged item so user can easily scale its grams
-        const baseG = existingLogItem.grams || 100;
-        food = {
-          id: existingLogItem.foodId || 'logged_item',
-          emoji: existingLogItem.emoji || guessEmoji(existingLogItem.name),
-          name: existingLogItem.name,
-          baseGrams: baseG,
-          defaultGrams: baseG,
-          cal: existingLogItem.cal,
-          pro: existingLogItem.pro,
-          carb: existingLogItem.carb,
-          fat: existingLogItem.fat,
-          hint: 'Adjust grams to update your logged meal'
-        };
-      } else if (isOnline) {
-        food = state.onlineResults.find(f => f.id === foodId);
-      } else {
-        food = state.foods.find(f => f.id === foodId);
-      }
-
-      if (!food) return;
-      activePortionFood = food;
-
-      document.getElementById('pmEmoji').textContent = food.emoji || '🍽️';
-      document.getElementById('pmTitle').textContent = food.name;
-      document.getElementById('pmHint').textContent = food.hint || `${food.cal} Cal & ${food.pro}g Protein per ${food.baseGrams}g`;
-
-      // Natural Unit Multipliers (1x, 2x, 3x, 4x)
-      const unitRow = document.getElementById('pmUnitRow');
-      const unitBtns = document.getElementById('pmUnitButtons');
-      if (food.unitGrams && food.unitName) {
-        unitRow.classList.remove('hidden');
-        document.getElementById('pmUnitLabel').textContent = `Quick Count (${food.unitName})`;
-        const ug = Number(food.unitGrams);
-        unitBtns.innerHTML = [1, 2, 3, 4]
-          .map(cnt => {
-            const g = Math.round(ug * cnt);
-            return `
-              <button type="button" onclick="setPortionGrams(${g})" class="tap-btn py-2 px-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-center">
-                <span class="block text-xs font-extrabold text-emerald-300">${cnt}x</span>
-                <span class="block text-[11px] font-bold text-slate-300">${g}g</span>
-              </button>
-            `;
-          })
-          .join('');
-      } else {
-        unitRow.classList.add('hidden');
-      }
-
-      const startGrams = existingLogItem ? (existingLogItem.grams || 100) : (food.defaultGrams || food.baseGrams || 150);
-      document.getElementById('pmGramsInput').value = startGrams;
-
-      document.getElementById('pmConfirmBtn').innerHTML = editingLogEntryId
-        ? `<span>✅ Save Updated Portion</span>`
-        : `<span>✅ Add to Today's Log</span>`;
-
-      const favBtn = document.getElementById('pmFavBtn');
-      favBtn.innerHTML = food.fav ? `<span>⭐ Favorited</span>` : `<span>☆ Pin to Favorites</span>`;
-
-      updatePortionPreview();
-
-      const modal = document.getElementById('portionModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closePortionModal() {
-      const modal = document.getElementById('portionModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-      activePortionFood = null;
-      editingLogEntryId = null;
-    }
-
-    function setPortionGrams(g) {
-      document.getElementById('pmGramsInput').value = g;
-      updatePortionPreview();
-    }
-
-    function stepPortionGrams(delta) {
-      const cur = parseFloat(document.getElementById('pmGramsInput').value) || 100;
-      const next = Math.max(5, Math.round(cur + delta));
-      document.getElementById('pmGramsInput').value = next;
-      updatePortionPreview();
-    }
-
-    function updatePortionPreview() {
-      if (!activePortionFood) return;
-      const baseG = Number(activePortionFood.baseGrams) || 100;
-      const grams = Math.max(0, parseFloat(document.getElementById('pmGramsInput').value) || 0);
-      const ratio = grams / baseG;
-
-      const cal = Math.round(activePortionFood.cal * ratio);
-      const pro = Math.round(activePortionFood.pro * ratio * 10) / 10;
-      const carb = Math.round(activePortionFood.carb * ratio * 10) / 10;
-      const fat = Math.round(activePortionFood.fat * ratio * 10) / 10;
-
-      document.getElementById('pmCal').textContent = `+${cal}`;
-      document.getElementById('pmPro').textContent = `+${pro}g`;
-      document.getElementById('pmCarb').textContent = `+${carb}g`;
-      document.getElementById('pmFat').textContent = `+${fat}g`;
-
-      // Highlight matching quick button if 100, 150, 200, 300
-      [100, 150, 200, 300].forEach(q => {
-        const btn = document.getElementById(`qBtn${q}`);
-        if (!btn) return;
-        btn.className = grams === q
-          ? 'tap-btn py-2.5 px-1 rounded-xl bg-sky-500/25 border-2 border-sky-400 text-center'
-          : 'tap-btn py-2.5 px-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-center';
-      });
-    }
-
-    function confirmPortionAndLog() {
-      if (!activePortionFood) return;
-      const baseG = Number(activePortionFood.baseGrams) || 100;
-      const grams = Math.max(1, Math.round(parseFloat(document.getElementById('pmGramsInput').value) || baseG));
-      const ratio = grams / baseG;
-
-      const cal = Math.round(activePortionFood.cal * ratio);
-      const pro = Math.round(activePortionFood.pro * ratio * 10) / 10;
-      const carb = Math.round(activePortionFood.carb * ratio * 10) / 10;
-      const fat = Math.round(activePortionFood.fat * ratio * 10) / 10;
-
-      const dayObj = getDayObj(state.activeBrother, state.selectedDate);
-
-      if (editingLogEntryId) {
-        const idx = dayObj.items.findIndex(i => i.id === editingLogEntryId);
-        if (idx !== -1) {
-          dayObj.items[idx] = {
-            ...dayObj.items[idx],
-            grams,
-            cal,
-            pro,
-            carb,
-            fat
-          };
-        }
-        toast(`Updated ${activePortionFood.name} to ${grams}g!`);
-      } else {
-        // Auto-save online food to Favorites so it's always there next time
-        if (String(activePortionFood.id).startsWith('online_')) {
-          const already = state.foods.some(f => f.name.toLowerCase() === activePortionFood.name.toLowerCase());
-          if (!already) {
-            state.foods.unshift({
-              ...activePortionFood,
-              id: 'custom_' + Date.now(),
-              category: 'favorites',
-              fav: true,
-              builtIn: false
-            });
-          }
-        }
-
-        dayObj.items.push({
-          id: 'meal_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
-          foodId: activePortionFood.id,
-          emoji: activePortionFood.emoji || '🍽️',
-          name: activePortionFood.name,
-          grams,
-          cal,
-          pro,
-          carb,
-          fat,
-          timestamp: Date.now()
-        });
-        toast(`Added ${grams}g ${activePortionFood.name} (+${cal} Cal, +${pro}g Protein)`);
-      }
-
-      saveData();
-      closePortionModal();
-      renderAll();
-    }
-
-    function toggleFavoriteFromModal() {
-      if (!activePortionFood) return;
-      let local = state.foods.find(f => f.id === activePortionFood.id);
-      if (!local) {
-        local = {
-          ...activePortionFood,
-          id: 'custom_' + Date.now(),
-          category: 'favorites',
-          fav: true,
-          builtIn: false
-        };
-        state.foods.unshift(local);
-        activePortionFood = local;
-      } else {
-        local.fav = !local.fav;
-      }
-      saveData();
-      document.getElementById('pmFavBtn').innerHTML = local.fav ? `<span>⭐ Favorited</span>` : `<span>☆ Pin to Favorites</span>`;
-      renderFoodGrid();
-      toast(local.fav ? `⭐ Pinned to Favorites!` : `Removed from Favorites`);
-    }
-
-    function editFoodFromModal() {
-      if (!activePortionFood) return;
-      const foodToEdit = { ...activePortionFood };
-      closePortionModal();
-      openCustomFoodModal(foodToEdit);
-    }
-
-    // ========================================================
-    // 5. CUSTOM FOOD MODAL
-    // ========================================================
-    function openCustomFoodModal(food = null) {
-      document.getElementById('cfEditId').value = food ? food.id : '';
-      document.getElementById('cfModalTitle').textContent = food ? `✏️ Edit ${food.name}` : '➕ Save a Custom Food';
-      document.getElementById('cfEmoji').value = food ? (food.emoji || '🍽️') : '🍽️';
-      document.getElementById('cfName').value = food ? food.name : (state.searchQuery || '');
-      document.getElementById('cfGrams').value = food ? (food.baseGrams || 100) : 100;
-      document.getElementById('cfCal').value = food ? food.cal : '';
-      document.getElementById('cfPro').value = food ? food.pro : '';
-      document.getElementById('cfCarb').value = food ? food.carb : '';
-      document.getElementById('cfFat').value = food ? food.fat : '';
-
-      const m = document.getElementById('customFoodModal');
-      m.classList.remove('hidden');
-      m.classList.add('flex');
-    }
-
-    function closeCustomFoodModal() {
-      const m = document.getElementById('customFoodModal');
-      m.classList.add('hidden');
-      m.classList.remove('flex');
-    }
-
-    function autoCalcCustomCal() {
-      const p = parseFloat(document.getElementById('cfPro').value) || 0;
-      const c = parseFloat(document.getElementById('cfCarb').value) || 0;
-      const f = parseFloat(document.getElementById('cfFat').value) || 0;
-      document.getElementById('cfCal').value = Math.round(p * 4 + c * 4 + f * 9);
-    }
-
-    function saveCustomFoodModal() {
-      const editId = document.getElementById('cfEditId').value;
-      const emoji = document.getElementById('cfEmoji').value.trim() || '🍽️';
-      const name = document.getElementById('cfName').value.trim();
-      const baseGrams = Math.max(1, Math.round(parseFloat(document.getElementById('cfGrams').value) || 100));
-      const pro = Math.round((parseFloat(document.getElementById('cfPro').value) || 0) * 10) / 10;
-      const carb = Math.round((parseFloat(document.getElementById('cfCarb').value) || 0) * 10) / 10;
-      const fat = Math.round((parseFloat(document.getElementById('cfFat').value) || 0) * 10) / 10;
-      const cal = Math.round(parseFloat(document.getElementById('cfCal').value) || (pro * 4 + carb * 4 + fat * 9));
-
-      if (!name) {
-        toast('Please enter a food name!');
-        return;
-      }
-
-      const idx = state.foods.findIndex(f => f.id === editId);
-      let savedFood = null;
-      if (editId && idx !== -1) {
-        state.foods[idx] = {
-          ...state.foods[idx],
-          emoji,
-          name,
-          baseGrams,
-          pro,
-          carb,
-          fat,
-          cal
-        };
-        savedFood = state.foods[idx];
-      } else {
-        savedFood = {
-          id: 'custom_' + Date.now(),
-          emoji,
-          name,
-          category: 'favorites',
-          baseGrams,
-          defaultGrams: baseGrams,
-          pro,
-          carb,
-          fat,
-          cal,
-          fav: true,
-          builtIn: false,
-          hint: `${cal} Cal • ${pro}g Protein per ${baseGrams}g`
-        };
-        state.foods.unshift(savedFood);
-      }
-
-      saveData();
-      closeCustomFoodModal();
-      renderAll();
-      openPortionModal(savedFood.id);
-    }
-
-    // ========================================================
-    // 6. TODAY'S MEALS LOG HELPERS
-    // ========================================================
-    function getDayObj(broKey, dateStr) {
-      const prof = state.profiles[broKey];
-      if (!prof.days[dateStr]) prof.days[dateStr] = { items: [] };
-      return prof.days[dateStr];
-    }
-
-    function getDayTotals(broKey, dateStr) {
-      const dayObj = state.profiles[broKey].days[dateStr];
-      const totals = { cal: 0, pro: 0, carb: 0, fat: 0, count: 0 };
-      if (!dayObj || !Array.isArray(dayObj.items)) return totals;
-
-      dayObj.items.forEach(i => {
-        totals.cal += Number(i.cal) || 0;
-        totals.pro += Number(i.pro) || 0;
-        totals.carb += Number(i.carb) || 0;
-        totals.fat += Number(i.fat) || 0;
-        totals.count += 1;
-      });
-
-      totals.cal = Math.round(totals.cal);
-      totals.pro = Math.round(totals.pro * 10) / 10;
-      totals.carb = Math.round(totals.carb * 10) / 10;
-      totals.fat = Math.round(totals.fat * 10) / 10;
-      return totals;
-    }
-
-    function editLoggedMealGrams(itemId) {
-      const dayObj = getDayObj(state.activeBrother, state.selectedDate);
-      const item = dayObj.items.find(i => i.id === itemId);
-      if (!item) return;
-      openPortionModal(null, false, item);
-    }
-
-    function deleteLoggedMeal(itemId) {
-      const dayObj = getDayObj(state.activeBrother, state.selectedDate);
-      dayObj.items = dayObj.items.filter(i => i.id !== itemId);
-      saveData();
-      renderAll();
-      toast('Removed meal from today');
-    }
-
-    function copyYesterdayMeals() {
-      const parts = state.selectedDate.split('-').map(Number);
-      const dt = new Date(parts[0], parts[1] - 1, parts[2]);
-      dt.setDate(dt.getDate() - 1);
-      const yStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
-
-      const yDay = state.profiles[state.activeBrother].days[yStr];
-      if (!yDay || !Array.isArray(yDay.items) || yDay.items.length === 0) {
-        toast('No meals logged yesterday to copy!');
-        return;
-      }
-
-      const todayObj = getDayObj(state.activeBrother, state.selectedDate);
-      yDay.items.forEach((item, idx) => {
-        todayObj.items.push({
-          ...item,
-          id: 'meal_' + Date.now() + '_' + idx
-        });
-      });
-
-      saveData();
-      renderAll();
-      toast(`Copied ${yDay.items.length} meals from yesterday!`);
-    }
-
-    // ========================================================
-    // 7. RENDER UI
-    // ========================================================
-    function renderAll() {
-      const isRyan = state.activeBrother === 'ryan';
-      const bro = state.profiles[state.activeBrother];
-      const goals = getAutoGoals(bro.weight, bro.phase);
-      const totals = getDayTotals(state.activeBrother, state.selectedDate);
-
-      // Top Brother Switcher (Blue for Ryan, Emerald for Eric)
-      document.getElementById('topWeightRyan').textContent = `(${state.profiles.ryan.weight} lbs)`;
-      document.getElementById('topWeightEric').textContent = `(${state.profiles.eric.weight} lbs)`;
-
-      document.getElementById('btnTabRyan').className = isRyan
-        ? 'tap-btn py-3 px-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 bg-sky-500 text-slate-950 shadow-lg transition-all'
-        : 'tap-btn py-3 px-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 text-slate-300 hover:bg-slate-900 transition-all';
-
-      document.getElementById('btnTabEric').className = !isRyan
-        ? 'tap-btn py-3 px-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 bg-emerald-500 text-slate-950 shadow-lg transition-all'
-        : 'tap-btn py-3 px-3 rounded-xl font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 text-slate-300 hover:bg-slate-900 transition-all';
-
-      // Theme accent border on Card 1
-      const progressCard = document.getElementById('progressCard');
-      progressCard.style.borderColor = isRyan ? 'rgba(56, 189, 248, 0.45)' : 'rgba(16, 185, 129, 0.45)';
-
-      // Date Bar
-      document.getElementById('dateInput').value = state.selectedDate;
-      const isToday = state.selectedDate === getTodayStr();
-      document.getElementById('dateFriendlyLabel').textContent = isToday ? '📅 Today:' : '📅 Date:';
-      const jumpBtn = document.getElementById('todayJumpBtn');
-      if (isToday) jumpBtn.classList.add('hidden');
-      else jumpBtn.classList.remove('hidden');
-
-      // Card 1: Weight & Mode
-      const wTitle = document.getElementById('brotherWeightTitle');
-      wTitle.textContent = `${bro.name}'s Weight:`;
-      wTitle.className = `text-xs font-extrabold uppercase tracking-wide ${isRyan ? 'text-sky-400' : 'text-emerald-400'}`;
-      document.getElementById('weightInput').value = bro.weight;
-
-      const isBulk = bro.phase !== 'cut' && bro.phase !== 'shred';
-      document.getElementById('btnModeBulk').className = isBulk
-        ? 'tap-btn px-2.5 py-1.5 rounded-lg text-xs font-extrabold bg-amber-400 text-slate-950 shadow transition'
-        : 'tap-btn px-2.5 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
-      document.getElementById('btnModeCut').className = !isBulk
-        ? 'tap-btn px-2.5 py-1.5 rounded-lg text-xs font-extrabold bg-cyan-400 text-slate-950 shadow transition'
-        : 'tap-btn px-2.5 py-1.5 rounded-lg text-xs font-extrabold text-slate-400 hover:text-white transition';
-
-      // Calorie Headline & Encouraging Badge
-      const calPct = Math.min(100, Math.round((totals.cal / (goals.cal || 1)) * 100));
-      const calLeft = goals.cal - totals.cal;
-      document.getElementById('calEatenText').textContent = totals.cal.toLocaleString();
-      document.getElementById('calGoalText').textContent = `/ ${goals.cal.toLocaleString()} Cal`;
-      document.getElementById('calBarFill').style.width = `${calPct}%`;
-
-      const badge = document.getElementById('calStatusBadge');
-      if (calLeft > 150) {
-        badge.textContent = `${calLeft.toLocaleString()} Cal left to eat!`;
-        badge.className = 'px-3.5 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-extrabold text-xs sm:text-sm';
-      } else if (calLeft >= -150) {
-        badge.textContent = `🎉 Daily Calorie Goal Hit!`;
-        badge.className = 'px-3.5 py-2 rounded-2xl bg-amber-400/20 border border-amber-400/40 text-amber-300 font-extrabold text-xs sm:text-sm';
-      } else {
-        badge.textContent = `+${Math.abs(calLeft).toLocaleString()} Cal over goal`;
-        badge.className = 'px-3.5 py-2 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-sky-300 font-extrabold text-xs sm:text-sm';
-      }
-
-      // 3 Macro Bars
-      updateMacroCard('pro', totals.pro, goals.pro);
-      updateMacroCard('carb', totals.carb, goals.carb);
-      updateMacroCard('fat', totals.fat, goals.fat);
-
-      renderFoodGrid();
-      renderMealsList();
-      renderBrotherCheckIn();
-    }
-
-    function updateMacroCard(prefix, eaten, goal) {
-      const pct = Math.min(100, Math.round((eaten / (goal || 1)) * 100));
-      const left = Math.round((goal - eaten) * 10) / 10;
-      document.getElementById(`${prefix}EatenText`).textContent = `${eaten}g`;
-      document.getElementById(`${prefix}GoalText`).textContent = `/ ${goal}g`;
-      document.getElementById(`${prefix}BarFill`).style.width = `${pct}%`;
-      document.getElementById(`${prefix}LeftBadge`).textContent = left > 0 ? `${left}g left` : `🎉 Goal hit!`;
-    }
-
-    function renderFoodGrid() {
-      const cats = ['favorites', 'costco_meats', 'carbs_sides', 'fast_food', 'snacks_drinks'];
-      cats.forEach(c => {
-        const el = document.getElementById(`cat_${c}`);
-        if (!el) return;
-        const active = !state.searchQuery && state.activeCategory === c;
-        el.className = active
-          ? 'tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap bg-sky-500 text-slate-950 shadow'
-          : 'tap-btn px-3.5 py-2 rounded-2xl text-xs font-extrabold whitespace-nowrap bg-slate-900 text-slate-300 border border-slate-700 hover:bg-slate-800';
-      });
-
-      const q = state.searchQuery.trim();
-      const badge = document.getElementById('smartSearchBadge');
-      let list = [];
-
-      if (q.length > 0) {
-        list = smartFilterFoods(state.foods, q);
-        if (badge) {
-          badge.textContent = `${list.length} instant match${list.length === 1 ? '' : 'es'}`;
-          badge.classList.remove('hidden');
-        }
-      } else {
-        if (badge) badge.classList.add('hidden');
-        if (state.activeCategory === 'favorites') {
-          list = state.foods.filter(f => f.fav);
-        } else {
-          list = state.foods.filter(f => f.category === state.activeCategory);
-        }
-      }
-
-      const grid = document.getElementById('foodGrid');
-      if (list.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-full bg-slate-900/60 rounded-2xl p-5 text-center border border-dashed border-slate-700">
-            <p class="text-xs sm:text-sm font-extrabold text-slate-300">No saved foods match "${escapeHtml(state.searchQuery)}"</p>
-            <p class="text-xs text-slate-400 mt-1">Check the online results right below or tap <strong>➕ Custom Food</strong>!</p>
-          </div>
-        `;
-        return;
-      }
-
-      grid.innerHTML = list
-        .map(f => {
-          const dispG = f.defaultGrams || f.baseGrams || 100;
-          const mult = dispG / (f.baseGrams || 100);
-          const dispCal = Math.round(f.cal * mult);
-          const dispPro = Math.round(f.pro * mult);
-
-          return `
-            <button
-              type="button"
-              onclick="openPortionModal('${f.id}', false)"
-              class="tap-btn text-left bg-slate-900 hover:bg-slate-800/90 p-3.5 rounded-2xl border-2 border-slate-800 hover:border-sky-500/50 flex flex-col justify-between gap-2 transition"
-            >
-              <div class="flex items-start justify-between gap-1 w-full">
-                <span class="text-2xl sm:text-3xl leading-none">${f.emoji || '🍽️'}</span>
-                <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-slate-800 text-slate-300">${dispG}g</span>
-              </div>
-              <div>
-                <h3 class="text-xs sm:text-sm font-extrabold text-white leading-snug line-clamp-2">${escapeHtml(f.name)}</h3>
-                <p class="text-[11px] font-bold text-slate-400 mt-1">
-                  <span class="text-amber-400">${dispCal} Cal</span> • <span class="text-rose-400">${dispPro}g P</span>
-                </p>
-              </div>
-            </button>
-          `;
-        })
-        .join('');
-    }
-
-    function renderMealsList() {
-      const dayObj = getDayObj(state.activeBrother, state.selectedDate);
-      const items = Array.isArray(dayObj.items) ? [...dayObj.items].reverse() : [];
-      document.getElementById('mealCountBadge').textContent = items.length;
-
-      const container = document.getElementById('mealsListContainer');
-      if (items.length === 0) {
-        container.innerHTML = `
-          <div class="bg-slate-900/60 rounded-2xl p-6 text-center border-2 border-dashed border-slate-800">
-            <span class="text-2xl block mb-1">🍽️</span>
-            <p class="text-sm font-extrabold text-slate-300">Nothing logged yet today — tap a food above to start!</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = items
-        .map(item => `
-          <div class="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 flex items-center justify-between gap-2.5">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-11 h-11 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-center text-xl shrink-0">
-                ${item.emoji || guessEmoji(item.name)}
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <h4 class="font-extrabold text-sm text-white truncate">${escapeHtml(item.name)}</h4>
-                  ${item.grams ? `<span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 text-[11px] font-extrabold">${item.grams}g</span>` : ''}
-                </div>
-                <div class="flex items-center gap-2.5 text-xs font-extrabold mt-0.5">
-                  <span class="text-amber-400">${item.cal} Cal</span>
-                  <span class="text-rose-400">${item.pro}g P</span>
-                  <span class="text-sky-400">${item.carb}g C</span>
-                  <span class="text-purple-400">${item.fat}g F</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onclick="editLoggedMealGrams('${item.id}')"
-                class="tap-btn px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-extrabold border border-slate-700"
-              >
-                Edit Grams
-              </button>
-              <button
-                type="button"
-                onclick="deleteLoggedMeal('${item.id}')"
-                class="tap-btn w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 flex items-center justify-center border border-slate-700"
-                title="Delete"
-              >
-                🗑️
-              </button>
-            </div>
-          </div>
-        `)
-        .join('');
-    }
-
-    function renderBrotherCheckIn() {
-      const grid = document.getElementById('brotherComparisonGrid');
-      grid.innerHTML = ['ryan', 'eric']
-        .map(broKey => {
-          const isRyan = broKey === 'ryan';
-          const prof = state.profiles[broKey];
-          const goals = getAutoGoals(prof.weight, prof.phase);
-          const totals = getDayTotals(broKey, state.selectedDate);
-          const calPct = Math.min(100, Math.round((totals.cal / (goals.cal || 1)) * 100));
-          const proPct = Math.min(100, Math.round((totals.pro / (goals.pro || 1)) * 100));
-
-          return `
-            <div
-              onclick="switchBrother('${broKey}')"
-              class="tap-btn cursor-pointer bg-slate-900 p-3.5 rounded-2xl border-2 ${
-                state.activeBrother === broKey
-                  ? (isRyan ? 'border-sky-400' : 'border-emerald-400')
-                  : 'border-slate-800'
-              } space-y-2"
-            >
-              <div class="flex items-center justify-between">
-                <span class="font-extrabold text-sm ${isRyan ? 'text-sky-400' : 'text-emerald-400'}">
-                  ${isRyan ? '🧑🏻 Ryan' : '👦🏻 Eric'} (${prof.weight} lbs)
-                </span>
-                <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-lg bg-slate-800 text-slate-300">
-                  ${prof.phase === 'cut' ? '⚡ Cut' : '💪 Bulk'}
-                </span>
-              </div>
-              <div class="text-xs font-extrabold flex justify-between">
-                <span class="text-slate-400">Calories</span>
-                <span class="text-white">${totals.cal.toLocaleString()} / ${goals.cal.toLocaleString()}</span>
-              </div>
-              <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
-                <div class="h-full bg-amber-400 rounded-full" style="width:${calPct}%"></div>
-              </div>
-              <div class="text-xs font-extrabold flex justify-between">
-                <span class="text-slate-400">Protein</span>
-                <span class="text-rose-300">${totals.pro}g / ${goals.pro}g</span>
-              </div>
-              <div class="w-full h-2 bg-slate-950 rounded-full overflow-hidden">
-                <div class="h-full bg-rose-500 rounded-full" style="width:${proPct}%"></div>
-              </div>
-            </div>
-          `;
-        })
-        .join('');
-    }
-
-    // ========================================================
-    // 8. BACKUP & SYNC MODAL (`💾 Backup`)
-    // ========================================================
-    function openBackupModal() {
-      const m = document.getElementById('backupModal');
-      m.classList.remove('hidden');
-      m.classList.add('flex');
-    }
-
-    function closeBackupModal() {
-      const m = document.getElementById('backupModal');
-      m.classList.add('hidden');
-      m.classList.remove('flex');
-    }
-
-    function copyBackupCode() {
-      const payload = {
-        version: 5,
-        exportedAt: new Date().toISOString(),
-        foods: state.foods,
-        profiles: state.profiles
-      };
-      const code = btoa(encodeURIComponent(JSON.stringify(payload)));
-      document.getElementById('backupCodeBox').value = code;
-
-      const temp = document.createElement('textarea');
-      temp.value = code;
-      document.body.appendChild(temp);
-      temp.select();
-      document.execCommand('copy');
-      document.body.removeChild(temp);
-
-      toast('📋 Copied Backup Code!');
-    }
-
-    function downloadBackupFile() {
-      const payload = {
-        version: 5,
-        exportedAt: new Date().toISOString(),
-        foods: state.foods,
-        profiles: state.profiles
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ryan-eric-food-backup-${getTodayStr()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast('⬇️ Downloaded Backup File!');
-    }
-
-    function uploadBackupFile(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (ev) {
-        document.getElementById('backupCodeBox').value = ev.target.result;
-        restoreBackup('merge');
-      };
-      reader.readAsText(file);
-      e.target.value = '';
-    }
-
-    function restoreBackup(mode) {
-      const raw = document.getElementById('backupCodeBox').value.trim();
-      if (!raw) {
-        toast('Paste a Backup Code first!');
-        return;
-      }
-      try {
-        const data = raw.startsWith('{') ? JSON.parse(raw) : JSON.parse(decodeURIComponent(atob(raw)));
-        const incomingFoods = data.foods || data.foodVault || [];
-        if (incomingFoods.length > 0) {
-          state.foods = mode === 'overwrite'
-            ? mergeFoodLists(DEFAULT_FOODS, incomingFoods)
-            : mergeFoodLists(state.foods, incomingFoods);
-        }
-
-        if (data.profiles) {
-          if (mode === 'overwrite') {
-            state.profiles = data.profiles;
-          } else {
-            ['ryan', 'eric'].forEach(broKey => {
-              const inc = data.profiles[broKey];
-              if (!inc) return;
-              if (inc.weight) state.profiles[broKey].weight = inc.weight;
-              if (inc.phase || inc.activePhase) state.profiles[broKey].phase = inc.phase || inc.activePhase;
-              const incDays = inc.days || {};
-              Object.keys(incDays).forEach(d => {
-                const targetDay = getDayObj(broKey, d);
-                const existingIds = new Set(targetDay.items.map(i => i.id));
-                (incDays[d].items || []).forEach(item => {
-                  if (!existingIds.has(item.id)) targetDay.items.push(item);
-                });
-              });
-            });
-          }
-        }
-
-        saveData();
-        renderAll();
-        closeBackupModal();
-        toast('✨ Backup restored & merged!');
-      } catch (err) {
-        toast('Oops! That backup code looks incomplete.');
-      }
-    }
-
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    window.onload = function () {
-      initPasscode();
-      loadData();
-      renderAll();
     };
-  </script>
+
+    if (usdaPrepRes.status === "fulfilled" && usdaPrepRes.value.foods) {
+      parseUsdaList(usdaPrepRes.value.foods, "USDA Raw");
+    }
+    if (usdaBrandRes.status === "fulfilled" && usdaBrandRes.value.foods) {
+      parseUsdaList(usdaBrandRes.value.foods, "USDA Branded");
+    }
+
+    if (offRes.status === "fulfilled" && Array.isArray(offRes.value.products)) {
+      offRes.value.products.forEach(p => {
+        if (!p.product_name || !p.nutriments) return;
+        const n = p.nutriments;
+        const cal = Number(n["energy-kcal_100g"] || 0);
+        const pro = Number(n.proteins_100g || 0);
+        const carb = Number(n.carbohydrates_100g || 0);
+        const fat = Number(n.fat_100g || 0);
+        if (cal === 0 && pro === 0) return;
+
+        const serveG = parseFloat(p.serving_quantity) > 0 ? Math.round(parseFloat(p.serving_quantity)) : 100;
+        onlineItems.push({
+          name: p.brands ? `${p.product_name} (${p.brands.split(',')[0]})` : p.product_name,
+          emoji: "🌍",
+          cat: "all",
+          source: "OpenFoodFacts",
+          serveLabel: p.serving_size ? `${p.serving_size}` : `100g`,
+          serveG,
+          cal100: Math.round(cal),
+          pro100: Number(pro.toFixed(1)),
+          carb100: Number(carb.toFixed(1)),
+          fat100: Number(fat.toFixed(1))
+        });
+      });
+    }
+
+    // Deduplicate by normalized name
+    const seen = new Set(existingLocal.map(i => normalizeText(i.name)));
+    const merged = [...existingLocal];
+    for (const item of onlineItems) {
+      const key = normalizeText(item.name);
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(item);
+      }
+    }
+
+    statusEl.textContent = `✅ Showing ${merged.length} results from Instant Vault, USDA Prepared/Survey, USDA Branded & OpenFoodFacts`;
+    renderSearchResults(merged);
+  } catch (err) {
+    statusEl.textContent = `⚠️ Offline or API rate limit reached — showing Instant Vault catalog.`;
+  }
+}
+
+function renderSearchResults(list) {
+  const container = document.getElementById("searchResults");
+  if (!list.length) {
+    container.innerHTML = `<div class="text-xs text-slate-400 py-4 text-center">No matches yet. Keep typing or click "+ Custom Vault Food" above!</div>`;
+    return;
+  }
+
+  container.innerHTML = list.slice(0, 45).map((item, idx) => {
+    const serveCal = Math.round((item.cal100 * item.serveG) / 100);
+    const servePro = ((item.pro100 * item.serveG) / 100).toFixed(1);
+    const serveCarb = ((item.carb100 * item.serveG) / 100).toFixed(1);
+    const serveFat = ((item.fat100 * item.serveG) / 100).toFixed(1);
+    const encoded = encodeURIComponent(JSON.stringify(item));
+
+    return `
+      <div onclick="openPortionPicker('${encoded}')"
+        class="flex items-center justify-between gap-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl cursor-pointer transition">
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <span>${item.emoji || "🍽️"}</span>
+            <span class="font-bold text-xs sm:text-sm truncate">${item.name}</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">${item.source}</span>
+          </div>
+          <div class="text-[11px] text-slate-400 mt-0.5">
+            Per ${item.serveLabel}: <b class="text-amber-400">${serveCal} kcal</b> · <span class="text-rose-400">${servePro}g P</span> · <span class="text-sky-400">${serveCarb}g C</span> · <span class="text-emerald-400">${serveFat}g F</span>
+          </div>
+        </div>
+        <button class="bg-blue-600/20 text-blue-300 border border-blue-500/30 px-2.5 py-1 rounded-lg text-xs font-bold shrink-0">
+          Select
+        </button>
+      </div>
+    `;
+  }).join("");
+}
+
+// ===================== PORTION PICKER & LOGGING =====================
+function openPortionPicker(encodedItem) {
+  selectedFood = JSON.parse(decodeURIComponent(encodedItem));
+  document.getElementById("portionModal").classList.remove("hidden");
+  document.getElementById("selFoodName").textContent = `${selectedFood.emoji || "🍽️"} ${selectedFood.name}`;
+  document.getElementById("selFoodSource").textContent = selectedFood.source;
+
+  const unitSel = document.getElementById("portionUnit");
+  unitSel.options[0].textContent = `Serving (${selectedFood.serveLabel})`;
+  unitSel.value = "serving";
+  document.getElementById("portionQty").value = 1;
+
+  renderQuickPortionButtons();
+  recalcPortionPreview();
+}
+
+function renderQuickPortionButtons() {
+  const unit = document.getElementById("portionUnit").value;
+  const box = document.getElementById("quickPortionBtns");
+  let presets = [];
+  if (unit === "serving") {
+    presets = [0.5, 1, 1.5, 2, 3];
+  } else if (unit === "g") {
+    presets = [50, 100, 150, 200, 250, 300];
+  } else {
+    presets = [2, 4, 6, 8, 10];
+  }
+  box.innerHTML = presets.map(v => `
+    <button onclick="setQuickQty(${v})" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold">
+      ${v} ${unit === 'serving' ? 'x' : unit}
+    </button>
+  `).join("");
+}
+
+function setQuickQty(val) {
+  document.getElementById("portionQty").value = val;
+  recalcPortionPreview();
+}
+
+function onUnitChange() {
+  const unit = document.getElementById("portionUnit").value;
+  document.getElementById("portionQty").value = unit === "g" ? 100 : (unit === "oz" ? 4 : 1);
+  renderQuickPortionButtons();
+  recalcPortionPreview();
+}
+
+function getSelectedGrams() {
+  if (!selectedFood) return 0;
+  const qty = parseFloat(document.getElementById("portionQty").value) || 0;
+  const unit = document.getElementById("portionUnit").value;
+  if (unit === "serving") return qty * (selectedFood.serveG || 100);
+  if (unit === "oz") return qty * 28.3495;
+  return qty;
+}
+
+function recalcPortionPreview() {
+  if (!selectedFood) return;
+  const grams = getSelectedGrams();
+  const ratio = grams / 100;
+  document.getElementById("prevCal").textContent = Math.round(selectedFood.cal100 * ratio);
+  document.getElementById("prevPro").textContent = (selectedFood.pro100 * ratio).toFixed(1);
+  document.getElementById("prevCarb").textContent = (selectedFood.carb100 * ratio).toFixed(1);
+  document.getElementById("prevFat").textContent = (selectedFood.fat100 * ratio).toFixed(1);
+}
+
+function closePortionModal() {
+  document.getElementById("portionModal").classList.add("hidden");
+  selectedFood = null;
+}
+
+function confirmAddFood() {
+  if (!selectedFood) return;
+  const qty = parseFloat(document.getElementById("portionQty").value) || 0;
+  const unit = document.getElementById("portionUnit").value;
+  const grams = getSelectedGrams();
+  const ratio = grams / 100;
+
+  const entry = {
+    id: Date.now(),
+    name: selectedFood.name,
+    emoji: selectedFood.emoji || "🍽️",
+    portionText: unit === "serving" ? `${qty} × ${selectedFood.serveLabel}` : `${qty}${unit} (${Math.round(grams)}g)`,
+    cal: Math.round(selectedFood.cal100 * ratio),
+    pro: Number((selectedFood.pro100 * ratio).toFixed(1)),
+    carb: Number((selectedFood.carb100 * ratio).toFixed(1)),
+    fat: Number((selectedFood.fat100 * ratio).toFixed(1))
+  };
+
+  const key = `${state.currentUser}_${state.currentDate}`;
+  if (!state.logs[key]) state.logs[key] = [];
+  state.logs[key].unshift(entry);
+  saveState();
+  closePortionModal();
+  renderAll();
+}
+
+// ===================== CUSTOM VAULT FOOD =====================
+function toggleCustomForm() {
+  document.getElementById("customFoodDrawer").classList.toggle("hidden");
+}
+
+function saveCustomFood() {
+  const name = document.getElementById("cfName").value.trim();
+  const serveLabel = document.getElementById("cfServeLabel").value.trim() || "1 serving";
+  const serveG = parseFloat(document.getElementById("cfGrams").value) || 100;
+  const cal = parseFloat(document.getElementById("cfCal").value) || 0;
+  const pro = parseFloat(document.getElementById("cfPro").value) || 0;
+  const carb = parseFloat(document.getElementById("cfCarb").value) || 0;
+  const fat = parseFloat(document.getElementById("cfFat").value) || 0;
+
+  if (!name) return alert("Please enter a food name.");
+
+  const factor = 100 / serveG;
+  const newFood = {
+    name,
+    emoji: "⭐",
+    cat: "all",
+    source: "Custom Vault",
+    serveLabel: `${serveLabel} (${serveG}g)`,
+    serveG,
+    cal100: Math.round(cal * factor),
+    pro100: Number((pro * factor).toFixed(1)),
+    carb100: Number((carb * factor).toFixed(1)),
+    fat100: Number((fat * factor).toFixed(1))
+  };
+
+  state.customFoods.unshift(newFood);
+  saveState();
+  toggleCustomForm();
+  renderSearchResults(getCombinedLocalCatalog());
+  openPortionPicker(encodeURIComponent(JSON.stringify(newFood)));
+}
+
+// ===================== RENDER UI =====================
+function removeLogItem(id) {
+  const key = `${state.currentUser}_${state.currentDate}`;
+  state.logs[key] = (state.logs[key] || []).filter(i => i.id !== id);
+  saveState();
+  renderAll();
+}
+
+function clearTodayLog() {
+  if (!confirm(`Clear all logged entries for ${state.currentUser} on ${state.currentDate}?`)) return;
+  const key = `${state.currentUser}_${state.currentDate}`;
+  state.logs[key] = [];
+  saveState();
+  renderAll();
+}
+
+function renderAll() {
+  // User Header Buttons
+  document.getElementById("ryanWeightHdr").textContent = state.profiles.Ryan.weight;
+  document.getElementById("ericWeightHdr").textContent = state.profiles.Eric.weight;
+
+  const isRyan = state.currentUser === "Ryan";
+  document.getElementById("btnRyan").className = isRyan
+    ? "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-lg"
+    : "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-800 text-slate-400";
+  document.getElementById("btnEric").className = !isRyan
+    ? "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white shadow-lg"
+    : "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-800 text-slate-400";
+
+  // Profile Inputs & Goals
+  const prof = state.profiles[state.currentUser];
+  document.getElementById("weightInput").value = prof.weight;
+  document.getElementById("goalSelect").value = prof.goal;
+
+  const goals = getMacroGoals(prof.weight, prof.goal);
+  document.getElementById("calGoal").textContent = goals.cal;
+  document.getElementById("proGoal").textContent = goals.pro;
+  document.getElementById("carbGoal").textContent = goals.carb;
+  document.getElementById("fatGoal").textContent = goals.fat;
+
+  // Daily Totals
+  const key = `${state.currentUser}_${state.currentDate}`;
+  const todayList = state.logs[key] || [];
+  let totCal = 0, totPro = 0, totCarb = 0, totFat = 0;
+
+  todayList.forEach(i => {
+    totCal += i.cal;
+    totPro += i.pro;
+    totCarb += i.carb;
+    totFat += i.fat;
+  });
+
+  document.getElementById("calNow").textContent = Math.round(totCal);
+  document.getElementById("proNow").textContent = totPro.toFixed(1);
+  document.getElementById("carbNow").textContent = totCarb.toFixed(1);
+  document.getElementById("fatNow").textContent = totFat.toFixed(1);
+
+  document.getElementById("calBar").style.width = `${Math.min(100, (totCal / goals.cal) * 100)}%`;
+  document.getElementById("proBar").style.width = `${Math.min(100, (totPro / goals.pro) * 100)}%`;
+  document.getElementById("carbBar").style.width = `${Math.min(100, (totCarb / goals.carb) * 100)}%`;
+  document.getElementById("fatBar").style.width = `${Math.min(100, (totFat / goals.fat) * 100)}%`;
+
+  // Render Logged List
+  const logContainer = document.getElementById("dailyLogList");
+  if (!todayList.length) {
+    logContainer.innerHTML = `<div class="text-xs text-slate-500 text-center py-6">No food logged yet for ${state.currentUser}. Search above to add meals!</div>`;
+    return;
+  }
+
+  logContainer.innerHTML = todayList.map(item => `
+    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 px-3.5 py-2.5 rounded-xl">
+      <div>
+        <div class="font-bold text-xs sm:text-sm">${item.emoji} ${item.name}</div>
+        <div class="text-[11px] text-slate-400">
+          ${item.portionText} · <b class="text-amber-400">${item.cal} kcal</b> ·
+          <span class="text-rose-400">${item.pro}g P</span> ·
+          <span class="text-sky-400">${item.carb}g C</span> ·
+          <span class="text-emerald-400">${item.fat}g F</span>
+        </div>
+      </div>
+      <button onclick="removeLogItem(${item.id})" class="text-slate-500 hover:text-rose-400 text-sm font-bold px-2">✕</button>
+    </div>
+  `).join("");
+}
+
+// ===================== JSON VAULT BACKUP =====================
+function openBackupModal() {
+  document.getElementById("backupModal").classList.remove("hidden");
+  document.getElementById("backupModal").classList.add("flex");
+  document.getElementById("backupText").value = JSON.stringify(state, null, 2);
+}
+
+function closeBackupModal() {
+  document.getElementById("backupModal").classList.add("hidden");
+  document.getElementById("backupModal").classList.remove("flex");
+}
+
+function downloadJsonBackup() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `ryan_eric_macro_vault_${state.currentDate}.json`;
+  a.click();
+}
+
+function copyJsonBackup() {
+  navigator.clipboard.writeText(JSON.stringify(state, null, 2));
+  alert("Backup JSON copied to clipboard!");
+}
+
+function restoreJsonBackup() {
+  try {
+    const parsed = JSON.parse(document.getElementById("backupText").value);
+    if (!parsed.profiles || !parsed.logs) throw new Error("Invalid format");
+    state = parsed;
+    saveState();
+    renderAll();
+    closeBackupModal();
+    alert("Backup restored successfully!");
+  } catch (e) {
+    alert("Invalid JSON backup text.");
+  }
+}
+</script>
 </body>
 </html>
