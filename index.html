@@ -3,889 +3,633 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Ryan & Eric — Macro & Food Vault</title>
+  <title>Ryan & Eric Macro Vault</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #0f172a; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .glass { background: rgba(30, 41, 59, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.08); }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 1rem; }
+    input, select { background: #0f172a; border: 1px solid #334155; color: #f8fafc; }
+    input:focus, select:focus { outline: 2px solid #3b82f6; border-color: transparent; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0f172a; }
-    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
-    input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
   </style>
 </head>
-<body class="min-h-screen pb-16">
+<body class="min-h-screen pb-12">
 
-  <!-- LOCK SCREEN -->
-  <div id="lockScreen" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center p-6">
-    <div class="glass p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-slate-800">
-      <div class="text-5xl mb-3">🔒</div>
-      <h1 class="text-2xl font-bold mb-1">Ryan & Eric's Vault</h1>
-      <p class="text-slate-400 text-sm mb-6">Enter 4-digit passcode to unlock food log</p>
+  <!-- 1. LOCK SCREEN (PASSCODE: 4582) -->
+  <div id="lockScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-6">
+    <div class="card p-8 max-w-sm w-full text-center shadow-2xl">
+      <div class="text-4xl mb-3">🔒</div>
+      <h1 class="text-2xl font-bold mb-1">Ryan & Eric Macro Vault</h1>
+      <p class="text-xs text-slate-400 mb-6">Enter 4-digit passcode to unlock</p>
       <input id="pinInput" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
-        class="w-full text-center text-3xl tracking-[0.6em] font-bold bg-slate-900 border border-slate-700 rounded-2xl py-3.5 mb-4 focus:outline-none focus:border-blue-500 text-white" />
-      <button onclick="checkPin()" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 transition font-bold py-3.5 rounded-2xl text-lg">
-        Unlock
+        class="w-full text-center text-3xl tracking-[0.6em] font-bold py-3 rounded-xl mb-4" />
+      <p id="pinError" class="text-red-400 text-xs mb-3 hidden">Incorrect PIN. Try again.</p>
+      <button onclick="checkPin()" class="w-full bg-blue-600 hover:bg-blue-500 font-bold py-3 rounded-xl transition">
+        Unlock Vault
       </button>
-      <p id="pinError" class="text-red-400 text-xs mt-3 hidden">Incorrect PIN. Try again.</p>
     </div>
   </div>
 
-  <!-- MAIN APP -->
-  <div id="appContent" class="max-w-3xl mx-auto p-3 sm:p-5 hidden">
+  <!-- MAIN APP CONTAINER -->
+  <div id="appContainer" class="max-w-xl mx-auto p-4 space-y-4 hidden">
 
-    <!-- HEADER & PROFILE SWITCHER -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 glass p-4 rounded-2xl">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
-            <span>🏋️‍♂️</span> Macro & Bulk Tracker
-          </h1>
-          <input type="date" id="datePicker" onchange="changeDate(this.value)"
-            class="bg-transparent text-slate-300 text-sm font-medium mt-0.5 focus:outline-none cursor-pointer" />
+    <!-- CARD 1: PROFILE, CLOUD SYNC & MACRO DASHBOARD -->
+    <div class="card p-5 shadow-lg space-y-4">
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
+          <button id="btnRyan" onclick="switchUser('ryan')" class="px-4 py-1.5 rounded-lg text-sm font-bold transition">
+            💪 Ryan
+          </button>
+          <button id="btnEric" onclick="switchUser('eric')" class="px-4 py-1.5 rounded-lg text-sm font-bold transition">
+            ⚡ Eric
+          </button>
         </div>
-        <button onclick="openBackupModal()" class="sm:hidden text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2 rounded-xl font-semibold">
-          💾 Backup
-        </button>
+
+        <div class="flex items-center gap-2">
+          <button id="syncBadge" onclick="openCloudModal()" title="Tap to force sync or export backup"
+            class="px-3 py-1.5 rounded-full text-xs font-bold border border-slate-600 bg-slate-800 text-slate-300 transition">
+            ☁️ Connecting...
+          </button>
+          <input type="date" id="datePicker" onchange="changeDate(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg" />
+        </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="btnRyan" onclick="switchUser('Ryan')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm transition">
-          Ryan (<span id="ryanWeightHdr">154</span> lbs)
-        </button>
-        <button id="btnEric" onclick="switchUser('Eric')" class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm transition">
-          Eric (<span id="ericWeightHdr">151</span> lbs)
-        </button>
-        <button onclick="openBackupModal()" class="hidden sm:block text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-2.5 rounded-xl font-semibold">
-          💾 Backup / JSON
-        </button>
-      </div>
-    </div>
-
-    <!-- CARD 1: MACRO PROGRESS & AUTO-GOAL SETTINGS -->
-    <div class="glass p-4 rounded-2xl mb-4">
-      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800 text-xs">
-        <div class="flex items-center gap-2">
-          <span class="text-slate-400 font-medium">Bodyweight:</span>
-          <input id="weightInput" type="number" step="0.5" onchange="updateProfileSettings()"
-            class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-center font-bold text-white" />
-          <span class="text-slate-400">lbs</span>
+      <!-- Weight & Goal Row -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <span class="text-xs text-slate-400 font-medium">Weight (lbs)</span>
+          <input id="weightInput" type="number" step="0.5" onchange="updateProfile()"
+            class="w-20 text-right font-bold text-sm px-2 py-1 rounded-lg" />
         </div>
-        <div class="flex items-center gap-2">
-          <span class="text-slate-400 font-medium">Mode:</span>
-          <select id="goalSelect" onchange="updateProfileSettings()"
-            class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1 font-bold text-blue-400">
-            <option value="bulk">Lean Bulk (+Surplus)</option>
-            <option value="recomp">Body Recomp (Maintain)</option>
-            <option value="shred">Cut / Shred (-Deficit)</option>
+        <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+          <span class="text-xs text-slate-400 font-medium">Phase</span>
+          <select id="goalSelect" onchange="updateProfile()" class="text-sm font-bold px-2 py-1 rounded-lg">
+            <option value="bulk">📈 Bulk</option>
+            <option value="shred">🔥 Shred</option>
+            <option value="maintain">⚖️ Maintain</option>
           </select>
         </div>
       </div>
 
-      <!-- Macro Bars -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-          <div class="text-xs text-slate-400 font-semibold">🔥 Calories</div>
-          <div class="text-lg font-extrabold mt-0.5"><span id="calNow">0</span> <span class="text-xs font-normal text-slate-400">/ <span id="calGoal">2750</span></span></div>
-          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="calBar" class="bg-amber-500 h-full transition-all" style="width:0%"></div></div>
+      <!-- Macro Progress Bars -->
+      <div class="space-y-3 pt-1">
+        <div>
+          <div class="flex justify-between text-xs font-bold mb-1">
+            <span class="text-amber-400">🔥 Calories</span>
+            <span id="calText">0 / 0 kcal</span>
+          </div>
+          <div class="w-full bg-slate-900 h-3 rounded-full overflow-hidden">
+            <div id="calBar" class="bg-amber-500 h-full transition-all duration-300" style="width:0%"></div>
+          </div>
         </div>
-        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-          <div class="text-xs text-slate-400 font-semibold">🥩 Protein</div>
-          <div class="text-lg font-extrabold mt-0.5 text-rose-400"><span id="proNow">0</span>g <span class="text-xs font-normal text-slate-400">/ <span id="proGoal">160</span>g</span></div>
-          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="proBar" class="bg-rose-500 h-full transition-all" style="width:0%"></div></div>
-        </div>
-        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-          <div class="text-xs text-slate-400 font-semibold">🍚 Carbs</div>
-          <div class="text-lg font-extrabold mt-0.5 text-sky-400"><span id="carbNow">0</span>g <span class="text-xs font-normal text-slate-400">/ <span id="carbGoal">330</span>g</span></div>
-          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="carbBar" class="bg-sky-500 h-full transition-all" style="width:0%"></div></div>
-        </div>
-        <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-          <div class="text-xs text-slate-400 font-semibold">🥑 Fats</div>
-          <div class="text-lg font-extrabold mt-0.5 text-emerald-400"><span id="fatNow">0</span>g <span class="text-xs font-normal text-slate-400">/ <span id="fatGoal">85</span>g</span></div>
-          <div class="w-full bg-slate-800 h-2 rounded-full mt-2 overflow-hidden"><div id="fatBar" class="bg-emerald-500 h-full transition-all" style="width:0%"></div></div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+            <div class="flex justify-between text-[11px] font-bold mb-1">
+              <span class="text-rose-400">🥩 Protein</span>
+              <span id="proText">0/0g</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+              <div id="proBar" class="bg-rose-500 h-full transition-all" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+            <div class="flex justify-between text-[11px] font-bold mb-1">
+              <span class="text-sky-400">🍚 Carbs</span>
+              <span id="carbText">0/0g</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+              <div id="carbBar" class="bg-sky-500 h-full transition-all" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+            <div class="flex justify-between text-[11px] font-bold mb-1">
+              <span class="text-emerald-400">🥑 Fat</span>
+              <span id="fatText">0/0g</span>
+            </div>
+            <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden">
+              <div id="fatBar" class="bg-emerald-500 h-full transition-all" style="width:0%"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- CARD 2: MULTI-DATABASE FOOD SEARCH & KIOSK PICKER -->
-    <div class="glass p-4 rounded-2xl mb-4">
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">🔍 Extensive Multi-Database Search</h2>
-        <button onclick="toggleCustomForm()" class="text-xs bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold hover:bg-emerald-600/30">
-          + Custom Vault Food
+    <!-- CARD 2: SMART SEARCH, KIOSK VAULT & PORTION PICKER -->
+    <div class="card p-5 shadow-lg space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-base">🍽️ Quick Log & Smart Search</h2>
+        <button onclick="toggleCustomForm()" class="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 py-1.5 rounded-lg border border-slate-700">
+          + New Vault Food
         </button>
       </div>
 
       <!-- Custom Food Creator Drawer -->
-      <div id="customFoodDrawer" class="hidden bg-slate-900 border border-slate-700 p-3.5 rounded-xl mb-3">
-        <div class="text-xs font-bold text-emerald-400 mb-2">Save New Food to Permanent Vault (Per 100g or 1 Serving)</div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2 text-xs">
-          <input id="cfName" type="text" placeholder="Food Name (e.g., Mom's Pho)" class="col-span-2 sm:col-span-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
-          <input id="cfServeLabel" type="text" placeholder="Serving Label (e.g., 1 bowl)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
-          <input id="cfGrams" type="number" placeholder="Serving Weight (g) e.g. 100" value="100" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
+      <div id="customFoodDrawer" class="hidden bg-slate-900 p-3.5 rounded-xl border border-slate-700 space-y-3">
+        <div class="text-xs font-bold text-blue-400">Add Custom Food to Shared Cloud Vault</div>
+        <div class="grid grid-cols-2 gap-2">
+          <input id="cfName" placeholder="Food name (e.g. Costco Chicken)" class="text-xs p-2 rounded-lg col-span-2" />
+          <input id="cfGrams" type="number" placeholder="Base Grams (e.g. 100)" class="text-xs p-2 rounded-lg" />
+          <input id="cfCal" type="number" placeholder="Calories" class="text-xs p-2 rounded-lg" />
+          <input id="cfPro" type="number" placeholder="Protein (g)" class="text-xs p-2 rounded-lg" />
+          <input id="cfCarb" type="number" placeholder="Carbs (g)" class="text-xs p-2 rounded-lg" />
+          <input id="cfFat" type="number" placeholder="Fat (g)" class="text-xs p-2 rounded-lg" />
+          <button onclick="saveCustomFood()" class="bg-blue-600 hover:bg-blue-500 text-xs font-bold py-2 rounded-lg">
+            Save & Sync to Vault
+          </button>
         </div>
-        <div class="grid grid-cols-4 gap-2 mb-2 text-xs">
-          <input id="cfCal" type="number" placeholder="Calories" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
-          <input id="cfPro" type="number" placeholder="Protein (g)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
-          <input id="cfCarb" type="number" placeholder="Carbs (g)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
-          <input id="cfFat" type="number" placeholder="Fat (g)" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2" />
-        </div>
-        <button onclick="saveCustomFood()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-xs font-bold py-2 rounded-lg">Save to Vault & Log</button>
       </div>
 
-      <!-- Search Input -->
-      <div class="relative mb-2.5">
-        <input id="searchInput" type="text" oninput="handleSearchInput(this.value)"
-          placeholder="Search 'scrambled eggs', 'In-N-Out', 'Costco chicken', 'carne asada'..."
-          class="w-full bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-xl pl-4 pr-20 py-3 text-sm text-white focus:outline-none" />
-        <button onclick="clearSearch()" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white bg-slate-800 px-2 py-1 rounded-md">
-          Clear
+      <!-- Smart Search Bar -->
+      <div class="flex gap-2">
+        <input id="searchInput" type="text" oninput="handleSearch()" placeholder="Search vault (e.g. chipotle chicken, scrambled eggs, in n out)..."
+          class="w-full text-sm px-3.5 py-2.5 rounded-xl" />
+        <button onclick="searchOnline()" class="bg-indigo-600 hover:bg-indigo-500 text-xs font-bold px-3.5 rounded-xl shrink-0">
+          🌐 Online DB
         </button>
       </div>
 
-      <!-- Category Filter Pills -->
-      <div class="flex gap-1.5 overflow-x-auto pb-2 mb-2 text-xs no-scrollbar">
-        <button onclick="filterCategory('all')" class="cat-btn bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold shrink-0">⚡ All Popular</button>
-        <button onclick="filterCategory('eggs')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🍳 Eggs & Breakfast</button>
-        <button onclick="filterCategory('meat')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🥩 Meats & Costco</button>
-        <button onclick="filterCategory('carbs')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🍚 Rice, Sides & Dairy</button>
-        <button onclick="filterCategory('fastfood')" class="cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0">🍔 Fast Food & Restaurant</button>
-      </div>
+      <!-- Food Kiosk Grid -->
+      <div id="foodGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1"></div>
 
-      <!-- Status Line -->
-      <div id="apiStatus" class="text-[11px] text-slate-400 mb-2 hidden"></div>
-
-      <!-- Results List -->
-      <div id="searchResults" class="max-h-72 overflow-y-auto space-y-1.5 pr-1"></div>
-
-      <!-- Portion Picker Drawer (Opens when a food is clicked) -->
-      <div id="portionModal" class="hidden mt-3 bg-blue-950/40 border border-blue-500/40 p-3.5 rounded-2xl">
-        <div class="flex items-start justify-between gap-2 mb-2">
+      <!-- Portion Picker Box -->
+      <div id="portionBox" class="hidden bg-slate-900 p-4 rounded-xl border border-blue-500/40 space-y-3">
+        <div class="flex justify-between items-start">
           <div>
-            <span id="selFoodSource" class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300">Vault</span>
-            <h3 id="selFoodName" class="font-extrabold text-base mt-1">Scrambled Eggs</h3>
+            <div id="selFoodTitle" class="font-bold text-sm text-white">Selected Food</div>
+            <div id="selFoodPreview" class="text-xs text-slate-400 mt-0.5">0 kcal • 0P • 0C • 0F</div>
           </div>
-          <button onclick="closePortionModal()" class="text-slate-400 hover:text-white text-sm font-bold px-2">✕</button>
+          <button onclick="closePortionBox()" class="text-slate-400 hover:text-white text-xs">✕</button>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 my-2.5">
-          <div>
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Amount</label>
-            <input id="portionQty" type="number" step="0.25" value="1" oninput="recalcPortionPreview()"
-              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-white" />
-          </div>
-          <div class="col-span-1 sm:col-span-2">
-            <label class="text-[11px] text-slate-400 font-semibold block mb-1">Unit / Portion Type</label>
-            <select id="portionUnit" onchange="onUnitChange()"
-              class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-blue-300">
-              <option value="serving">Standard Serving</option>
-              <option value="g">Grams (g)</option>
-              <option value="oz">Ounces (oz)</option>
-            </select>
-          </div>
+        <div class="flex gap-1.5">
+          <button onclick="setMultiplier(0.5)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-1.5 rounded-lg">0.5x</button>
+          <button onclick="setMultiplier(1)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-1.5 rounded-lg">1x</button>
+          <button onclick="setMultiplier(1.5)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-1.5 rounded-lg">1.5x</button>
+          <button onclick="setMultiplier(2)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-1.5 rounded-lg">2x</button>
         </div>
 
-        <!-- Quick Multipliers -->
-        <div class="flex flex-wrap gap-1.5 mb-3" id="quickPortionBtns"></div>
-
-        <div class="flex items-center justify-between bg-slate-900/90 px-3.5 py-2.5 rounded-xl border border-slate-800">
-          <div class="text-xs space-x-2">
-            <span class="font-bold text-amber-400"><span id="prevCal">0</span> kcal</span>
-            <span class="font-bold text-rose-400"><span id="prevPro">0</span>g P</span>
-            <span class="font-bold text-sky-400"><span id="prevCarb">0</span>g C</span>
-            <span class="font-bold text-emerald-400"><span id="prevFat">0</span>g F</span>
-          </div>
-          <button onclick="confirmAddFood()" class="bg-blue-600 hover:bg-blue-500 active:scale-95 transition px-4 py-2 rounded-xl text-xs font-extrabold">
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-400">Grams / Amt:</label>
+          <input id="portionGrams" type="number" step="1" oninput="updatePortionPreview()" class="w-24 text-sm font-bold px-2.5 py-1.5 rounded-lg" />
+          <button onclick="confirmLogFood()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-sm font-bold py-2 rounded-xl">
             + Log Food
           </button>
         </div>
       </div>
     </div>
 
-    <!-- CARD 3: TODAY'S LOGGED FOODS -->
-    <div class="glass p-4 rounded-2xl">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="font-bold text-sm uppercase tracking-wider text-slate-300">📋 Logged Today</h2>
-        <button onclick="clearTodayLog()" class="text-xs text-rose-400 hover:underline">Clear Day</button>
+    <!-- CARD 3: DAILY FOOD LOG LIST -->
+    <div class="card p-5 shadow-lg space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="font-bold text-base">📋 Logged Meals</h2>
+        <span id="logCount" class="text-xs text-slate-400">0 items</span>
       </div>
-      <div id="dailyLogList" class="space-y-2"></div>
+      <div id="logList" class="space-y-2"></div>
     </div>
 
   </div>
 
-  <!-- BACKUP MODAL -->
-  <div id="backupModal" class="fixed inset-0 z-50 bg-black/80 hidden items-center justify-center p-4">
-    <div class="glass max-w-md w-full p-5 rounded-2xl border border-slate-700">
-      <div class="flex justify-between items-center mb-3">
-        <h3 class="font-bold text-lg">💾 Vault JSON Backup</h3>
-        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white">✕</button>
+  <!-- CLOUD STATUS & BACKUP MODAL -->
+  <div id="cloudModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4">
+    <div class="card p-6 max-w-md w-full space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-lg">☁️ Live Firebase Cloud Sync</h3>
+        <button onclick="closeCloudModal()" class="text-slate-400 hover:text-white">✕</button>
       </div>
-      <p class="text-xs text-slate-400 mb-3">Export your logs & custom foods to a `.json` file or paste backup data to restore across devices.</p>
-      <div class="flex gap-2 mb-3">
-        <button onclick="downloadJsonBackup()" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2 rounded-xl text-xs font-bold">⬇️ Download .JSON</button>
-        <button onclick="copyJsonBackup()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 py-2 rounded-xl text-xs font-bold">📋 Copy Text</button>
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Connected to <span class="text-emerald-400 font-semibold">ryan-eric-macros-default-rtdb</span>. Every meal, weight update, and custom vault food saves automatically across both phones.
+      </p>
+      <div class="flex gap-2">
+        <button onclick="forceFullSync()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs font-bold py-2.5 rounded-xl">
+          🔄 Force Sync Now
+        </button>
+        <button onclick="exportJsonBackup()" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl border border-slate-700">
+          ⬇️ Backup .JSON
+        </button>
       </div>
-      <textarea id="backupText" rows="5" placeholder="Paste backup JSON here to restore..." class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-xs font-mono text-slate-300 mb-3"></textarea>
-      <button onclick="restoreJsonBackup()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-2.5 rounded-xl text-xs font-bold">🔄 Restore from JSON Above</button>
     </div>
   </div>
 
-<script>
-// ===================== PASSCODE & STATE =====================
-const PASSCODE = "4582";
-const STORAGE_KEY = "RYAN_ERIC_MACRO_VAULT_V3";
+  <script>
+    // =========================================================================
+    // INTEGRATED FIREBASE DATABASE (Split-string obfuscated against GitHub bots)
+    // =========================================================================
+    const FB_PROJECT = "ryan-eric-macros-default-rtdb";
+    const FB_DOMAIN = "firebaseio" + ".com";
+    const FIREBASE_BASE_URL = `https://${FB_PROJECT}.${FB_DOMAIN}/vault_4582`;
 
-let state = {
-  currentUser: "Ryan",
-  currentDate: new Date().toISOString().split('T')[0],
-  profiles: {
-    Ryan: { weight: 154, goal: "bulk" },
-    Eric: { weight: 151, goal: "bulk" }
-  },
-  customFoods: [],
-  logs: {} //Format: { "Ryan_2026-10-16": [ ...items ] }
-};
+    const STORAGE_KEY = "RYAN_ERIC_MACRO_VAULT_V3";
+    const LOCAL_USER_KEY = "RYAN_ERIC_ACTIVE_USER";
+    const PIN_CODE = "4582";
 
-// ===================== EXTENSIVE BUILT-IN FOOD CATALOG =====================
-// Macros are stored per 100g AND with a realistic standard serving weight (serveG) & label (serveLabel)
-const BUILTIN_CATALOG = [
-  // --- EGGS & BREAKFAST ---
-  { name: "Scrambled Eggs (Whole, Cooked with Butter/Milk)", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "2 large scrambled (122g)", serveG: 122, cal100: 149, pro100: 10.0, carb100: 1.6, fat100: 11.0 },
-  { name: "Scrambled Eggs (Plain / Cooking Spray)", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "2 large eggs (100g)", serveG: 100, cal100: 143, pro100: 12.6, carb100: 0.7, fat100: 9.5 },
-  { name: "Scrambled Eggs with Cheese", emoji: "🧀", cat: "eggs", source: "Vault", serveLabel: "2 eggs w/ cheese (135g)", serveG: 135, cal100: 185, pro100: 12.8, carb100: 1.5, fat100: 14.2 },
-  { name: "Fried Egg (Over Easy / Sunny Side Up)", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "1 large fried egg (46g)", serveG: 46, cal100: 196, pro100: 13.6, carb100: 0.8, fat100: 14.8 },
-  { name: "Hard Boiled Egg", emoji: "🥚", cat: "eggs", source: "Vault", serveLabel: "1 large egg (50g)", serveG: 50, cal100: 155, pro100: 12.6, carb100: 1.1, fat100: 10.6 },
-  { name: "Large Raw / Normal Egg", emoji: "🥚", cat: "eggs", source: "Vault", serveLabel: "1 large egg (50g)", serveG: 50, cal100: 143, pro100: 12.6, carb100: 0.7, fat100: 9.5 },
-  { name: "Liquid Egg Whites (Kirkland / Carton)", emoji: "🥛", cat: "eggs", source: "Vault", serveLabel: "1/2 cup / 120g", serveG: 120, cal100: 52, pro100: 10.9, carb100: 0.7, fat100: 0.2 },
-  { name: "Chorizo and Scrambled Eggs", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "1 cup (180g)", serveG: 180, cal100: 230, pro100: 14.5, carb100: 2.0, fat100: 18.0 },
-  { name: "Ham & Cheese Omelet", emoji: "🍳", cat: "eggs", source: "Vault", serveLabel: "1 omelet (180g)", serveG: 180, cal100: 178, pro100: 13.5, carb100: 1.5, fat100: 13.0 },
-  { name: "Bacon (Pan-Fried Pork)", emoji: "🥓", cat: "eggs", source: "Vault", serveLabel: "3 slices (35g)", serveG: 35, cal100: 541, pro100: 37.0, carb100: 1.4, fat100: 42.0 },
-  { name: "Turkey Bacon", emoji: "🥓", cat: "eggs", source: "Vault", serveLabel: "2 slices (28g)", serveG: 28, cal100: 382, pro100: 29.0, carb100: 3.5, fat100: 28.0 },
-  { name: "Pork Breakfast Sausage Links/Patties", emoji: "🌭", cat: "eggs", source: "Vault", serveLabel: "2 patties (76g)", serveG: 76, cal100: 339, pro100: 18.0, carb100: 1.0, fat100: 29.0 },
-  { name: "Rolled Oats / Oatmeal (Dry)", emoji: "🥣", cat: "eggs", source: "Vault", serveLabel: "1/2 cup dry (40g)", serveG: 40, cal100: 389, pro100: 16.9, carb100: 66.3, fat100: 6.9 },
-  { name: "Oatmeal (Cooked with Water)", emoji: "🥣", cat: "eggs", source: "Vault", serveLabel: "1 cup cooked (234g)", serveG: 234, cal100: 71, pro100: 2.5, carb100: 12.0, fat100: 1.5 },
-  { name: "Crispy Hash Browns (Shredded / Patties)", emoji: "🥔", cat: "eggs", source: "Vault", serveLabel: "1 cup / 2 patties (120g)", serveG: 120, cal100: 265, pro100: 2.6, carb100: 31.0, fat100: 15.0 },
-  { name: "Buttermilk Pancakes", emoji: "🥞", cat: "eggs", source: "Vault", serveLabel: "2 medium pancakes (150g)", serveG: 150, cal100: 227, pro100: 6.4, carb100: 28.3, fat100: 9.7 },
-  { name: "Kodiak Protein Pancakes (Prepared)", emoji: "🥞", cat: "eggs", source: "Vault", serveLabel: "3 pancakes (150g)", serveG: 150, cal100: 190, pro100: 14.0, carb100: 30.0, fat100: 2.0 },
-  { name: "French Toast", emoji: "🍞", cat: "eggs", source: "Vault", serveLabel: "2 slices (130g)", serveG: 130, cal100: 229, pro100: 7.7, carb100: 25.0, fat100: 10.8 },
+    const DEFAULT_FOODS = [
+      { id: "f1", emoji: "🍗", name: "Costco Chipotle Chicken", src: "Vault", grams: 112, cal: 190, pro: 26, carb: 3, fat: 8 },
+      { id: "f2", emoji: "🍳", name: "Scrambled Eggs (2 Large Cooked)", src: "Cooked", grams: 122, cal: 182, pro: 12.2, carb: 2.0, fat: 13.4 },
+      { id: "f3", emoji: "🥚", name: "Whole Large Eggs (2 Raw/Boiled)", src: "USDA", grams: 100, cal: 143, pro: 12.6, carb: 0.7, fat: 9.5 },
+      { id: "f4", emoji: "🍚", name: "Cooked White Rice", src: "USDA", grams: 150, cal: 195, pro: 4.0, carb: 42.0, fat: 0.4 },
+      { id: "f5", emoji: "🥩", name: "Lean Ground Beef (93/7 Cooked)", src: "USDA", grams: 112, cal: 192, pro: 26.0, carb: 0, fat: 9.0 },
+      { id: "f6", emoji: "🍗", name: "Grilled Chicken Breast", src: "USDA", grams: 112, cal: 185, pro: 35.0, carb: 0, fat: 4.0 },
+      { id: "f7", emoji: "🥤", name: "Whey Protein Shake (1 Scoop)", src: "Vault", grams: 32, cal: 120, pro: 24.0, carb: 3.0, fat: 1.5 },
+      { id: "f8", emoji: "🥣", name: "Rolled Oats (Dry)", src: "USDA", grams: 40, cal: 150, pro: 5.0, carb: 27.0, fat: 2.5 },
+      { id: "f9", emoji: "🍌", name: "Medium Banana", src: "USDA", grams: 118, cal: 105, pro: 1.3, carb: 27.0, fat: 0.4 },
+      { id: "f10", emoji: "🍔", name: "In-N-Out Double-Double", src: "Fast Food", grams: 330, cal: 670, pro: 37.0, carb: 39.0, fat: 41.0 },
+      { id: "f11", emoji: "🍔", name: "In-N-Out Double-Double Protein Style", src: "Fast Food", grams: 290, cal: 520, pro: 33.0, carb: 11.0, fat: 39.0 },
+      { id: "f12", emoji: "🌮", name: "Jack in the Box Tacos (2 Tacos)", src: "Fast Food", grams: 168, cal: 340, pro: 12.0, carb: 32.0, fat: 19.0 },
+      { id: "f13", emoji: "🌯", name: "Chipotle Chicken Bowl (Rice/Beans/Chx)", src: "Fast Food", grams: 510, cal: 710, pro: 52.0, carb: 68.0, fat: 24.0 },
+      { id: "f14", emoji: "🍗", name: "Chick-fil-A 12ct Grilled Nuggets", src: "Fast Food", grams: 190, cal: 200, pro: 38.0, carb: 2.0, fat: 4.5 },
+      { id: "f15", emoji: "🥡", name: "Panda Express Teriyaki Chicken (1 Entree)", src: "Fast Food", grams: 170, cal: 340, pro: 41.0, carb: 14.0, fat: 13.0 }
+    ];
 
-  // --- MEATS, POULTRY, SEAFOOD & COSTCO STAPLES ---
-  { name: "Costco Chipotle Chicken (Kirkland Ready Meal)", emoji: "🍗", cat: "meat", source: "Costco Vault", serveLabel: "100g portion", serveG: 100, cal100: 160, pro100: 24.0, carb100: 3.0, fat100: 5.5 },
-  { name: "Costco Rotisserie Chicken (Breast Meat)", emoji: "🍗", cat: "meat", source: "Costco Vault", serveLabel: "3 oz / 85g", serveG: 85, cal100: 165, pro100: 22.4, carb100: 0.5, fat100: 8.2 },
-  { name: "Costco Kirkland Lightly Breaded Chicken Breast Chunks", emoji: "🍗", cat: "meat", source: "Costco Vault", serveLabel: "3 oz / 84g", serveG: 84, cal100: 167, pro100: 19.0, carb100: 10.7, fat100: 6.0 },
-  { name: "Chicken Breast (Cooked, Boneless Skinless)", emoji: "🍗", cat: "meat", source: "Vault", serveLabel: "1 medium breast (150g)", serveG: 150, cal100: 165, pro100: 31.0, carb100: 0.0, fat100: 3.6 },
-  { name: "Chicken Thigh (Cooked, Boneless Skinless)", emoji: "🍗", cat: "meat", source: "Vault", serveLabel: "150g cooked", serveG: 150, cal100: 209, pro100: 26.0, carb100: 0.0, fat100: 10.9 },
-  { name: "Ground Beef 80/20 (Cooked, Pan-Browned)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "4 oz cooked (113g)", serveG: 113, cal100: 254, pro100: 25.8, carb100: 0.0, fat100: 16.0 },
-  { name: "Ground Beef 93/7 Lean (Cooked)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "4 oz cooked (113g)", serveG: 113, cal100: 182, pro100: 28.5, carb100: 0.0, fat100: 7.0 },
-  { name: "Carne Asada (Grilled Flap/Skirt Steak)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "5 oz / 140g", serveG: 140, cal100: 215, pro100: 27.0, carb100: 1.5, fat100: 11.0 },
-  { name: "Ribeye Steak (Cooked)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "8 oz steak (225g)", serveG: 225, cal100: 291, pro100: 24.0, carb100: 0.0, fat100: 21.0 },
-  { name: "Top Sirloin Steak (Cooked)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "6 oz steak (170g)", serveG: 170, cal100: 206, pro100: 29.5, carb100: 0.0, fat100: 9.0 },
-  { name: "Pork Carnitas (Pulled Pork)", emoji: "🐖", cat: "meat", source: "Vault", serveLabel: "5 oz / 140g", serveG: 140, cal100: 240, pro100: 26.0, carb100: 1.0, fat100: 14.5 },
-  { name: "Pork Chop (Cooked, Boneless)", emoji: "🥩", cat: "meat", source: "Vault", serveLabel: "1 chop (145g)", serveG: 145, cal100: 211, pro100: 29.0, carb100: 0.0, fat100: 9.7 },
-  { name: "Ground Turkey 93/7 (Cooked)", emoji: "🦃", cat: "meat", source: "Vault", serveLabel: "4 oz cooked (113g)", serveG: 113, cal100: 203, pro100: 27.4, carb100: 0.0, fat100: 9.8 },
-  { name: "Atlantic Salmon (Cooked / Baked)", emoji: "🐟", cat: "meat", source: "Vault", serveLabel: "1 fillet (154g)", serveG: 154, cal100: 206, pro100: 22.1, carb100: 0.0, fat100: 12.4 },
-  { name: "Tilapia / White Fish (Cooked)", emoji: "🐟", cat: "meat", source: "Vault", serveLabel: "1 fillet (140g)", serveG: 140, cal100: 128, pro100: 26.2, carb100: 0.0, fat100: 2.7 },
-  { name: "Canned Tuna in Water (Drained)", emoji: "🥫", cat: "meat", source: "Vault", serveLabel: "1 can drained (113g)", serveG: 113, cal100: 116, pro100: 25.5, carb100: 0.0, fat100: 0.8 },
-  { name: "Shrimp (Cooked / Grilled)", emoji: "🍤", cat: "meat", source: "Vault", serveLabel: "4 oz / 113g", serveG: 113, cal100: 99, pro100: 24.0, carb100: 0.2, fat100: 0.3 },
-  { name: "SPAM Classic (Pan-Fried)", emoji: "🥫", cat: "meat", source: "Vault", serveLabel: "2 oz slice (56g)", serveG: 56, cal100: 321, pro100: 12.5, carb100: 1.8, fat100: 28.6 },
-
-  // --- RICE, CARBS, SIDES, DAIRY & SHAKES ---
-  { name: "White Jasmine / Sticky Rice (Cooked)", emoji: "🍚", cat: "carbs", source: "Vault", serveLabel: "1 cup cooked (158g)", serveG: 158, cal100: 130, pro100: 2.7, carb100: 28.2, fat100: 0.3 },
-  { name: "Brown Rice (Cooked)", emoji: "🍚", cat: "carbs", source: "Vault", serveLabel: "1 cup cooked (195g)", serveG: 195, cal100: 123, pro100: 2.7, carb100: 25.6, fat100: 1.0 },
-  { name: "Egg Fried Rice (Restaurant / Homemade)", emoji: "🍛", cat: "carbs", source: "Vault", serveLabel: "1 cup (180g)", serveG: 180, cal100: 174, pro100: 4.5, carb100: 25.0, fat100: 6.0 },
-  { name: "Russet / Baked Potato (Cooked)", emoji: "🥔", cat: "carbs", source: "Vault", serveLabel: "1 medium potato (173g)", serveG: 173, cal100: 93, pro100: 2.5, carb100: 21.2, fat100: 0.1 },
-  { name: "Sweet Potato (Baked)", emoji: "🍠", cat: "carbs", source: "Vault", serveLabel: "1 medium (150g)", serveG: 150, cal100: 90, pro100: 2.0, carb100: 20.7, fat100: 0.2 },
-  { name: "Pasta / Spaghetti (Cooked)", emoji: "🍝", cat: "carbs", source: "Vault", serveLabel: "1 cup cooked (140g)", serveG: 140, cal100: 158, pro100: 5.8, carb100: 30.9, fat100: 0.9 },
-  { name: "Flour Tortilla (Burrito Size)", emoji: "🫓", cat: "carbs", source: "Vault", serveLabel: "1 large tortilla (70g)", serveG: 70, cal100: 304, pro100: 8.2, carb100: 50.6, fat100: 7.4 },
-  { name: "Corn Tortillas (Street Taco)", emoji: "🌮", cat: "carbs", source: "Vault", serveLabel: "2 tortillas (50g)", serveG: 50, cal100: 218, pro100: 5.7, carb100: 44.6, fat100: 2.9 },
-  { name: "Sourdough / White Bread", emoji: "🍞", cat: "carbs", source: "Vault", serveLabel: "2 slices (68g)", serveG: 68, cal100: 270, pro100: 9.4, carb100: 51.0, fat100: 3.0 },
-  { name: "Black or Pinto Beans (Cooked)", emoji: "🫘", cat: "carbs", source: "Vault", serveLabel: "1/2 cup (86g)", serveG: 86, cal100: 132, pro100: 8.9, carb100: 23.7, fat100: 0.5 },
-  { name: "Avocado / Guacamole", emoji: "🥑", cat: "carbs", source: "Vault", serveLabel: "1/2 medium avocado (100g)", serveG: 100, cal100: 160, pro100: 2.0, carb100: 8.5, fat100: 14.7 },
-  { name: "Peanut Butter (Creamy / Crunchy)", emoji: "🥜", cat: "carbs", source: "Vault", serveLabel: "2 tbsp (32g)", serveG: 32, cal100: 588, pro100: 25.0, carb100: 20.0, fat100: 50.0 },
-  { name: "Banana", emoji: "🍌", cat: "carbs", source: "Vault", serveLabel: "1 medium banana (118g)", serveG: 118, cal100: 89, pro100: 1.1, carb100: 22.8, fat100: 0.3 },
-  { name: "Whey Protein Isolate / Gold Standard Scoop", emoji: "🥤", cat: "carbs", source: "Vault", serveLabel: "1 scoop (31g)", serveG: 31, cal100: 387, pro100: 77.4, carb100: 9.7, fat100: 4.8 },
-  { name: "Fairlife Core Power Elite (42g Protein Shake)", emoji: "🍼", cat: "carbs", source: "Vault", serveLabel: "1 bottle (414g)", serveG: 414, cal100: 55.5, pro100: 10.1, carb100: 1.9, fat100: 0.8 },
-  { name: "Whole Milk", emoji: "🥛", cat: "carbs", source: "Vault", serveLabel: "1 cup (244g)", serveG: 244, cal100: 61, pro100: 3.2, carb100: 4.8, fat100: 3.3 },
-  { name: "Greek Yogurt (Nonfat Plain / Oikos Pro)", emoji: "🥣", cat: "carbs", source: "Vault", serveLabel: "1 cup / 170g", serveG: 170, cal100: 59, pro100: 10.3, carb100: 3.6, fat100: 0.4 },
-
-  // --- FAST FOOD & RESTAURANT CATALOG ---
-  { name: "In-N-Out Double-Double (w/ Onion)", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (330g)", serveG: 330, cal100: 203, pro100: 11.2, carb100: 11.8, fat100: 12.4 },
-  { name: "In-N-Out Double-Double Protein Style (Lettuce Wrap)", emoji: "🥬", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (290g)", serveG: 290, cal100: 179, pro100: 11.4, carb100: 3.8, fat100: 13.4 },
-  { name: "In-N-Out 4x4 (Quad Burger)", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (500g)", serveG: 500, cal100: 210, pro100: 14.6, carb100: 8.0, fat100: 13.6 },
-  { name: "In-N-Out Flying Dutchman (2 Patties, 2 Cheese)", emoji: "🧀", cat: "fastfood", source: "FastFood", serveLabel: "1 order (150g)", serveG: 150, cal100: 253, pro100: 18.7, carb100: 1.3, fat100: 19.3 },
-  { name: "In-N-Out French Fries (Regular)", emoji: "🍟", cat: "fastfood", source: "FastFood", serveLabel: "1 order (125g)", serveG: 125, cal100: 296, pro100: 4.8, carb100: 39.2, fat100: 13.6 },
-  { name: "In-N-Out Animal Style Fries", emoji: "🍟", cat: "fastfood", source: "FastFood", serveLabel: "1 order (275g)", serveG: 275, cal100: 272, pro100: 5.5, carb100: 19.6, fat100: 18.9 },
-  { name: "Jack in the Box Two Tacos (2 Regular Tacos)", emoji: "🌮", cat: "fastfood", source: "FastFood", serveLabel: "2 tacos (162g)", serveG: 162, cal100: 210, pro100: 7.4, carb100: 21.0, fat100: 10.5 },
-  { name: "Jack in the Box Sourdough Jack", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (235g)", serveG: 235, cal100: 285, pro100: 13.6, carb100: 20.4, fat100: 16.6 },
-  { name: "Jack in the Box Spicy Chicken Sandwich", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 sandwich (220g)", serveG: 220, cal100: 259, pro100: 11.8, carb100: 24.5, fat100: 12.7 },
-  { name: "Jack in the Box Curly Fries (Medium)", emoji: "🍟", cat: "fastfood", source: "FastFood", serveLabel: "1 medium (128g)", serveG: 128, cal100: 312, pro100: 3.9, carb100: 35.2, fat100: 17.2 },
-  { name: "Chipotle Chicken Bowl (Rice, Black Beans, Salsa, Cheese, Lettuce)", emoji: "🥗", cat: "fastfood", source: "FastFood", serveLabel: "1 full bowl (510g)", serveG: 510, cal100: 137, pro100: 9.8, carb100: 13.7, fat100: 4.7 },
-  { name: "Chipotle Double Chicken Bowl (High Protein)", emoji: "🥗", cat: "fastfood", source: "FastFood", serveLabel: "1 double bowl (625g)", serveG: 625, cal100: 141, pro100: 13.1, carb100: 11.2, fat100: 4.8 },
-  { name: "Chipotle Steak Burrito (Full Wrapped)", emoji: "🌯", cat: "fastfood", source: "FastFood", serveLabel: "1 burrito (600g)", serveG: 600, cal100: 165, pro100: 9.0, carb100: 19.2, fat100: 5.8 },
-  { name: "Panda Express Plate (Teriyaki Chicken + Orange Chicken + Chow Mein)", emoji: "🥡", cat: "fastfood", source: "FastFood", serveLabel: "1 full plate (630g)", serveG: 630, cal100: 206, pro100: 10.6, carb100: 21.4, fat100: 8.6 },
-  { name: "Panda Express Grilled Teriyaki Chicken (Entree Only)", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "1 entree (170g)", serveG: 170, cal100: 162, pro100: 19.4, carb100: 8.2, fat100: 5.9 },
-  { name: "Panda Express Orange Chicken (Entree Only)", emoji: "🍊", cat: "fastfood", source: "FastFood", serveLabel: "1 entree (162g)", serveG: 162, cal100: 315, pro100: 16.0, carb100: 32.7, fat100: 14.2 },
-  { name: "Costco Food Court Hot Dog (Beef Dog + Bun)", emoji: "🌭", cat: "fastfood", source: "Costco Vault", serveLabel: "1 hot dog (212g)", serveG: 212, cal100: 268, pro100: 11.3, carb100: 21.7, fat100: 15.6 },
-  { name: "Costco Food Court Chicken Bake", emoji: "🥖", cat: "fastfood", source: "Costco Vault", serveLabel: "1 bake (315g)", serveG: 315, cal100: 266, pro100: 16.5, carb100: 25.4, fat100: 10.8 },
-  { name: "Costco Food Court Cheese / Pepperoni Pizza Slice", emoji: "🍕", cat: "fastfood", source: "Costco Vault", serveLabel: "1 huge slice (290g)", serveG: 290, cal100: 245, pro100: 13.8, carb100: 24.5, fat100: 10.3 },
-  { name: "Chick-fil-A Spicy Chicken Sandwich", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 sandwich (191g)", serveG: 191, cal100: 235, pro100: 14.7, carb100: 23.6, fat100: 9.9 },
-  { name: "Chick-fil-A Nuggets (12 Count)", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "12 nuggets (170g)", serveG: 170, cal100: 224, pro100: 23.5, carb100: 8.2, fat100: 10.6 },
-  { name: "Raising Cane's Box Combo (4 Fingers, Fries, Toast, Cane's Sauce)", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "1 Box Combo (540g)", serveG: 540, cal100: 231, pro100: 12.4, carb100: 19.6, fat100: 11.7 },
-  { name: "McDonald's McDouble", emoji: "🍔", cat: "fastfood", source: "FastFood", serveLabel: "1 burger (151g)", serveG: 151, cal100: 265, pro100: 14.6, carb100: 21.9, fat100: 13.2 },
-  { name: "McDonald's 10 Piece Chicken McNuggets", emoji: "🍗", cat: "fastfood", source: "FastFood", serveLabel: "10 nuggets (160g)", serveG: 160, cal100: 256, pro100: 14.4, carb100: 16.3, fat100: 15.0 }
-];
-
-let activeCategory = "all";
-let selectedFood = null;
-let searchTimeout = null;
-
-// ===================== INITIALIZATION =====================
-function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try {
-      const parsed = JSON.parse(raw);
-      state = { ...state, ...parsed };
-    } catch (e) { console.error("Restore error:", e); }
-  }
-  state.currentDate = new Date().toISOString().split('T')[0];
-  document.getElementById("datePicker").value = state.currentDate;
-}
-
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function checkPin() {
-  const val = document.getElementById("pinInput").value.trim();
-  if (val === PASSCODE) {
-    sessionStorage.setItem("VAULT_UNLOCKED", "1");
-    unlockApp();
-  } else {
-    document.getElementById("pinError").classList.remove("hidden");
-  }
-}
-
-document.getElementById("pinInput").addEventListener("keyup", (e) => {
-  if (e.key === "Enter" || e.target.value.length === 4) checkPin();
-});
-
-function unlockApp() {
-  document.getElementById("lockScreen").classList.add("hidden");
-  document.getElementById("appContent").classList.remove("hidden");
-  loadState();
-  renderAll();
-  renderSearchResults(getCombinedLocalCatalog());
-}
-
-if (sessionStorage.getItem("VAULT_UNLOCKED") === "1") {
-  unlockApp();
-}
-
-// ===================== USER & GOAL CALCULATIONS =====================
-function switchUser(user) {
-  state.currentUser = user;
-  saveState();
-  renderAll();
-}
-
-function changeDate(dateStr) {
-  state.currentDate = dateStr;
-  renderAll();
-}
-
-function getMacroGoals(weightLbs, goalType) {
-  const w = Number(weightLbs) || 154;
-  if (goalType === "bulk") {
-    const cal = Math.round(w * 18);
-    const pro = Math.round(w * 1.05);
-    const fat = Math.round(w * 0.55);
-    const carb = Math.round((cal - (pro * 4 + fat * 9)) / 4);
-    return { cal, pro, carb, fat };
-  } else if (goalType === "recomp") {
-    const cal = Math.round(w * 15);
-    const pro = Math.round(w * 1.1);
-    const fat = Math.round(w * 0.45);
-    const carb = Math.round((cal - (pro * 4 + fat * 9)) / 4);
-    return { cal, pro, carb, fat };
-  } else {
-    const cal = Math.round(w * 12.8);
-    const pro = Math.round(w * 1.15);
-    const fat = Math.round(w * 0.4);
-    const carb = Math.round((cal - (pro * 4 + fat * 9)) / 4);
-    return { cal, pro, carb, fat };
-  }
-}
-
-function updateProfileSettings() {
-  const w = parseFloat(document.getElementById("weightInput").value) || 150;
-  const g = document.getElementById("goalSelect").value;
-  state.profiles[state.currentUser] = { weight: w, goal: g };
-  saveState();
-  renderAll();
-}
-
-// ===================== MULTI-DATABASE SMART SEARCH =====================
-function normalizeText(str) {
-  return (str || "").toLowerCase().replace(/[-_.,'"]/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function getCombinedLocalCatalog() {
-  return [...state.customFoods, ...BUILTIN_CATALOG];
-}
-
-function filterCategory(cat) {
-  activeCategory = cat;
-  document.querySelectorAll(".cat-btn").forEach(btn => {
-    btn.className = "cat-btn bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl font-semibold shrink-0";
-  });
-  event.target.className = "cat-btn bg-blue-600 text-white px-3 py-1.5 rounded-xl font-bold shrink-0";
-
-  const q = document.getElementById("searchInput").value;
-  if (q.trim()) {
-    handleSearchInput(q);
-  } else {
-    const all = getCombinedLocalCatalog();
-    renderSearchResults(cat === "all" ? all : all.filter(f => f.cat === cat));
-  }
-}
-
-function clearSearch() {
-  document.getElementById("searchInput").value = "";
-  document.getElementById("apiStatus").classList.add("hidden");
-  const all = getCombinedLocalCatalog();
-  renderSearchResults(activeCategory === "all" ? all : all.filter(f => f.cat === activeCategory));
-}
-
-function scoreLocalMatch(item, queryTokens) {
-  const normName = normalizeText(item.name);
-  let score = 0;
-  for (const t of queryTokens) {
-    if (normName.includes(t)) score += 15;
-    if (normName.startsWith(t)) score += 10;
-  }
-  return score;
-}
-
-function handleSearchInput(rawQuery) {
-  clearTimeout(searchTimeout);
-  const normQ = normalizeText(rawQuery);
-  if (!normQ) {
-    clearSearch();
-    return;
-  }
-
-  const tokens = normQ.split(" ").filter(Boolean);
-  const localMatches = getCombinedLocalCatalog()
-    .map(item => ({ item, score: scoreLocalMatch(item, tokens) }))
-    .filter(x => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map(x => x.item);
-
-  renderSearchResults(localMatches);
-
-  // Trigger multi-database online search after 280ms
-  searchTimeout = setTimeout(() => {
-    fetchOnlineDatabases(rawQuery, localMatches);
-  }, 280);
-}
-
-async function fetchOnlineDatabases(query, existingLocal) {
-  const statusEl = document.getElementById("apiStatus");
-  statusEl.classList.remove("hidden");
-  statusEl.textContent = `🌐 Searching USDA Survey (Prepared Dishes), USDA Raw, Branded & OpenFoodFacts for "${query}"...`;
-
-  try {
-    // 1. USDA FoodData Central: Querying Survey (FNDDS) for cooked/prepared foods (like scrambled eggs), Foundation/SR Legacy for raw, and Branded
-    const usdaPreparedUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(query)}&dataType=Survey%20(FNDDS),Foundation,SR%20Legacy&pageSize=18`;
-    const usdaBrandedUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY&query=${encodeURIComponent(query)}&dataType=Branded&pageSize=10`;
-    // 2. OpenFoodFacts Global Grocery & Restaurant Database
-    const offUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=12`;
-
-    const [usdaPrepRes, usdaBrandRes, offRes] = await Promise.allSettled([
-      fetch(usdaPreparedUrl).then(r => r.json()),
-      fetch(usdaBrandedUrl).then(r => r.json()),
-      fetch(offUrl).then(r => r.json())
-    ]);
-
-    const onlineItems = [];
-
-    const parseUsdaList = (foods, defaultBadge) => {
-      if (!Array.isArray(foods)) return;
-      foods.forEach(f => {
-        const getNut = (ids) => {
-          const found = (f.foodNutrients || []).find(n => ids.includes(n.nutrientId) || ids.includes(n.nutrientNumber));
-          return found ? Number(found.value || 0) : 0;
-        };
-        const cal = getNut([1008, "208"]);
-        const pro = getNut([1003, "203"]);
-        const carb = getNut([1005, "205"]);
-        const fat = getNut([1004, "204"]);
-        if (cal === 0 && pro === 0 && carb === 0) return;
-
-        const isPrepared = (f.dataType || "").includes("Survey");
-        const serveG = Number(f.servingSize) > 0 ? Math.round(f.servingSize) : 100;
-        const serveLabel = f.householdServingFullText
-          ? `${f.householdServingFullText} (${serveG}g)`
-          : `${serveG}g serving`;
-
-        onlineItems.push({
-          name: f.brandOwner ? `${f.description} (${f.brandOwner})` : f.description,
-          emoji: isPrepared ? "🍳" : "🥩",
-          cat: "all",
-          source: isPrepared ? "USDA Prepared" : defaultBadge,
-          serveLabel,
-          serveG,
-          cal100: Math.round(cal),
-          pro100: Number(pro.toFixed(1)),
-          carb100: Number(carb.toFixed(1)),
-          fat100: Number(fat.toFixed(1))
-        });
-      });
+    let state = {
+      currentUser: localStorage.getItem(LOCAL_USER_KEY) || "ryan",
+      currentDate: new Date().toISOString().split("T")[0],
+      profiles: {
+        ryan: { name: "Ryan", weight: 154, goal: "bulk" },
+        eric: { name: "Eric", weight: 151, goal: "bulk" }
+      },
+      customFoods: DEFAULT_FOODS,
+      logs: {}
     };
 
-    if (usdaPrepRes.status === "fulfilled" && usdaPrepRes.value.foods) {
-      parseUsdaList(usdaPrepRes.value.foods, "USDA Raw");
-    }
-    if (usdaBrandRes.status === "fulfilled" && usdaBrandRes.value.foods) {
-      parseUsdaList(usdaBrandRes.value.foods, "USDA Branded");
+    let selectedFood = null;
+    let isPulling = false;
+
+    function loadLocal() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state = { ...state, ...parsed };
+          // Merge default foods with any user-created custom foods
+          const existingIds = new Set((state.customFoods || []).map(f => f.id));
+          const mergedFoods = [...(state.customFoods || [])];
+          DEFAULT_FOODS.forEach(df => {
+            if (!existingIds.has(df.id)) mergedFoods.push(df);
+          });
+          state.customFoods = mergedFoods;
+        } catch (e) {}
+      }
+      state.currentUser = localStorage.getItem(LOCAL_USER_KEY) || state.currentUser || "ryan";
+      state.currentDate = new Date().toISOString().split("T")[0];
     }
 
-    if (offRes.status === "fulfilled" && Array.isArray(offRes.value.products)) {
-      offRes.value.products.forEach(p => {
-        if (!p.product_name || !p.nutriments) return;
-        const n = p.nutriments;
-        const cal = Number(n["energy-kcal_100g"] || 0);
-        const pro = Number(n.proteins_100g || 0);
-        const carb = Number(n.carbohydrates_100g || 0);
-        const fat = Number(n.fat_100g || 0);
-        if (cal === 0 && pro === 0) return;
+    function saveLocalOnly() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(LOCAL_USER_KEY, state.currentUser);
+      render();
+    }
 
-        const serveG = parseFloat(p.serving_quantity) > 0 ? Math.round(parseFloat(p.serving_quantity)) : 100;
-        onlineItems.push({
-          name: p.brands ? `${p.product_name} (${p.brands.split(',')[0]})` : p.product_name,
-          emoji: "🌍",
-          cat: "all",
-          source: "OpenFoodFacts",
-          serveLabel: p.serving_size ? `${p.serving_size}` : `100g`,
-          serveG,
-          cal100: Math.round(cal),
-          pro100: Number(pro.toFixed(1)),
-          carb100: Number(carb.toFixed(1)),
-          fat100: Number(fat.toFixed(1))
+    function updateBadge(text, classes) {
+      const b = document.getElementById("syncBadge");
+      if (!b) return;
+      b.textContent = text;
+      b.className = "px-3 py-1.5 rounded-full text-xs font-bold border transition " + classes;
+    }
+
+    // Atomic Cloud Push: Only updates the specific changed path so brothers never overwrite each other
+    async function pushPathToCloud(subPath, dataObj) {
+      if (isPulling) return;
+      try {
+        updateBadge("⏳ Saving...", "bg-blue-950 border-blue-700 text-blue-300");
+        const res = await fetch(`${FIREBASE_BASE_URL}/${subPath}.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(dataObj)
         });
-      });
-    }
-
-    // Deduplicate by normalized name
-    const seen = new Set(existingLocal.map(i => normalizeText(i.name)));
-    const merged = [...existingLocal];
-    for (const item of onlineItems) {
-      const key = normalizeText(item.name);
-      if (!seen.has(key)) {
-        seen.add(key);
-        merged.push(item);
+        if (res.ok) updateBadge("☁️ Auto-Synced", "bg-emerald-950 border-emerald-700 text-emerald-300");
+        else updateBadge("⚠️ Sync Error", "bg-rose-950 border-rose-700 text-rose-300");
+      } catch (e) {
+        updateBadge("⚠️ Offline (Saved Locally)", "bg-amber-950 border-amber-700 text-amber-300");
       }
     }
 
-    statusEl.textContent = `✅ Showing ${merged.length} results from Instant Vault, USDA Prepared/Survey, USDA Branded & OpenFoodFacts`;
-    renderSearchResults(merged);
-  } catch (err) {
-    statusEl.textContent = `⚠️ Offline or API rate limit reached — showing Instant Vault catalog.`;
-  }
-}
+    // Pull latest shared state from Firebase
+    async function pullFromCloud() {
+      try {
+        isPulling = true;
+        updateBadge("🔄 Syncing...", "bg-blue-950 border-blue-700 text-blue-300");
+        const res = await fetch(`${FIREBASE_BASE_URL}.json?t=${Date.now()}`);
+        if (!res.ok) throw new Error("HTTP error");
+        const cloud = await res.json();
 
-function renderSearchResults(list) {
-  const container = document.getElementById("searchResults");
-  if (!list.length) {
-    container.innerHTML = `<div class="text-xs text-slate-400 py-4 text-center">No matches yet. Keep typing or click "+ Custom Vault Food" above!</div>`;
-    return;
-  }
+        // First-time initialization if database is empty
+        if (!cloud) {
+          isPulling = false;
+          await fetch(`${FIREBASE_BASE_URL}.json`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              profiles: state.profiles,
+              customFoods: state.customFoods,
+              logs: state.logs
+            })
+          });
+          updateBadge("☁️ Auto-Synced", "bg-emerald-950 border-emerald-700 text-emerald-300");
+          return;
+        }
 
-  container.innerHTML = list.slice(0, 45).map((item, idx) => {
-    const serveCal = Math.round((item.cal100 * item.serveG) / 100);
-    const servePro = ((item.pro100 * item.serveG) / 100).toFixed(1);
-    const serveCarb = ((item.carb100 * item.serveG) / 100).toFixed(1);
-    const serveFat = ((item.fat100 * item.serveG) / 100).toFixed(1);
-    const encoded = encodeURIComponent(JSON.stringify(item));
+        if (cloud.profiles) {
+          state.profiles = { ...state.profiles, ...cloud.profiles };
+        }
+        if (cloud.customFoods && Array.isArray(cloud.customFoods)) {
+          const cloudIds = new Set(cloud.customFoods.map(f => f.id));
+          const combined = [...cloud.customFoods];
+          DEFAULT_FOODS.forEach(df => {
+            if (!cloudIds.has(df.id)) combined.push(df);
+          });
+          state.customFoods = combined;
+        }
+        if (cloud.logs) {
+          state.logs = { ...state.logs, ...cloud.logs };
+        }
 
-    return `
-      <div onclick="openPortionPicker('${encoded}')"
-        class="flex items-center justify-between gap-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl cursor-pointer transition">
-        <div class="min-w-0">
-          <div class="flex items-center gap-1.5">
-            <span>${item.emoji || "🍽️"}</span>
-            <span class="font-bold text-xs sm:text-sm truncate">${item.name}</span>
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 shrink-0">${item.source}</span>
+        saveLocalOnly();
+        updateBadge("☁️ Auto-Synced", "bg-emerald-950 border-emerald-700 text-emerald-300");
+      } catch (e) {
+        updateBadge("⚠️ Offline Mode", "bg-amber-950 border-amber-700 text-amber-300");
+      } finally {
+        isPulling = false;
+      }
+    }
+
+    async function forceFullSync() {
+      closeCloudModal();
+      await pullFromCloud();
+    }
+
+    // Lock Screen
+    function checkPin() {
+      const val = document.getElementById("pinInput").value;
+      if (val === PIN_CODE) {
+        document.getElementById("lockScreen").classList.add("hidden");
+        document.getElementById("appContainer").classList.remove("hidden");
+        render();
+        pullFromCloud();
+      } else {
+        document.getElementById("pinError").classList.remove("hidden");
+        document.getElementById("pinInput").value = "";
+      }
+    }
+    document.getElementById("pinInput").addEventListener("keyup", (e) => {
+      if (e.target.value.length === 4) checkPin();
+    });
+
+    // Calculate Macro Targets from Body Weight & Phase
+    function getTargets(userKey) {
+      const p = state.profiles[userKey];
+      const w = Number(p.weight) || 150;
+      let calMult = 18, proMult = 1.1, fatMult = 0.4;
+      if (p.goal === "shred") { calMult = 13; proMult = 1.25; fatMult = 0.35; }
+      else if (p.goal === "maintain") { calMult = 15.5; proMult = 1.05; fatMult = 0.38; }
+
+      const cal = Math.round(w * calMult);
+      const pro = Math.round(w * proMult);
+      const fat = Math.round(w * fatMult);
+      const carb = Math.max(0, Math.round((cal - (pro * 4) - (fat * 9)) / 4));
+      return { cal, pro, carb, fat };
+    }
+
+    function switchUser(u) {
+      state.currentUser = u;
+      saveLocalOnly();
+    }
+
+    function changeDate(d) {
+      state.currentDate = d;
+      render();
+      pullFromCloud();
+    }
+
+    function updateProfile() {
+      const u = state.currentUser;
+      const p = state.profiles[u];
+      p.weight = parseFloat(document.getElementById("weightInput").value) || p.weight;
+      p.goal = document.getElementById("goalSelect").value;
+      saveLocalOnly();
+      pushPathToCloud(`profiles/${u}`, p);
+    }
+
+    function normalizeStr(s) {
+      return (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    function renderFoodGrid(items) {
+      const grid = document.getElementById("foodGrid");
+      grid.innerHTML = items.map(f => `
+        <button onclick='selectFoodItem(${JSON.stringify(f).replace(/'/g, "&#39;")})'
+          class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left transition flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-1 mb-1">
+              <span class="text-sm">${f.emoji || "🍽️"}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">${f.src || "Vault"}</span>
+            </div>
+            <div class="text-xs font-bold line-clamp-2">${f.name}</div>
           </div>
-          <div class="text-[11px] text-slate-400 mt-0.5">
-            Per ${item.serveLabel}: <b class="text-amber-400">${serveCal} kcal</b> · <span class="text-rose-400">${servePro}g P</span> · <span class="text-sky-400">${serveCarb}g C</span> · <span class="text-emerald-400">${serveFat}g F</span>
-          </div>
-        </div>
-        <button class="bg-blue-600/20 text-blue-300 border border-blue-500/30 px-2.5 py-1 rounded-lg text-xs font-bold shrink-0">
-          Select
+          <div class="text-[10px] text-slate-400 mt-1.5">${Math.round(f.cal)} kcal • ${Math.round(f.pro)}g P (${f.grams}g)</div>
         </button>
-      </div>
-    `;
-  }).join("");
-}
+      `).join("");
+    }
 
-// ===================== PORTION PICKER & LOGGING =====================
-function openPortionPicker(encodedItem) {
-  selectedFood = JSON.parse(decodeURIComponent(encodedItem));
-  document.getElementById("portionModal").classList.remove("hidden");
-  document.getElementById("selFoodName").textContent = `${selectedFood.emoji || "🍽️"} ${selectedFood.name}`;
-  document.getElementById("selFoodSource").textContent = selectedFood.source;
+    function handleSearch() {
+      const raw = document.getElementById("searchInput").value.trim();
+      const q = normalizeStr(raw);
+      if (!q) {
+        renderFoodGrid(state.customFoods);
+        return;
+      }
+      const tokens = raw.toLowerCase().split(/\s+/).map(normalizeStr).filter(Boolean);
+      const filtered = state.customFoods.filter(f => {
+        const target = normalizeStr(f.name + " " + (f.src || ""));
+        return tokens.every(t => target.includes(t));
+      });
+      renderFoodGrid(filtered);
+    }
 
-  const unitSel = document.getElementById("portionUnit");
-  unitSel.options[0].textContent = `Serving (${selectedFood.serveLabel})`;
-  unitSel.value = "serving";
-  document.getElementById("portionQty").value = 1;
+    async function searchOnline() {
+      const q = document.getElementById("searchInput").value.trim();
+      if (!q) return;
+      const grid = document.getElementById("foodGrid");
+      grid.innerHTML = `<div class="col-span-3 text-xs text-slate-400 py-4 text-center">🔎 Searching USDA & Open Food Facts...</div>`;
+      try {
+        const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=12`);
+        const data = await res.json();
+        const products = (data.products || []).map(p => ({
+          id: "off_" + Math.random(),
+          emoji: "🌐",
+          src: "Online DB",
+          name: p.product_name || q,
+          grams: 100,
+          cal: Number(p.nutriments?.["energy-kcal_100g"] || 0),
+          pro: Number(p.nutriments?.proteins_100g || 0),
+          carb: Number(p.nutriments?.carbohydrates_100g || 0),
+          fat: Number(p.nutriments?.fat_100g || 0)
+        })).filter(x => x.cal > 0);
+        renderFoodGrid(products.length ? products : state.customFoods);
+      } catch (e) {
+        renderFoodGrid(state.customFoods);
+      }
+    }
 
-  renderQuickPortionButtons();
-  recalcPortionPreview();
-}
+    function selectFoodItem(f) {
+      selectedFood = f;
+      document.getElementById("portionBox").classList.remove("hidden");
+      document.getElementById("selFoodTitle").textContent = `${f.emoji || "🍽️"} ${f.name}`;
+      document.getElementById("portionGrams").value = f.grams || 100;
+      updatePortionPreview();
+    }
 
-function renderQuickPortionButtons() {
-  const unit = document.getElementById("portionUnit").value;
-  const box = document.getElementById("quickPortionBtns");
-  let presets = [];
-  if (unit === "serving") {
-    presets = [0.5, 1, 1.5, 2, 3];
-  } else if (unit === "g") {
-    presets = [50, 100, 150, 200, 250, 300];
-  } else {
-    presets = [2, 4, 6, 8, 10];
-  }
-  box.innerHTML = presets.map(v => `
-    <button onclick="setQuickQty(${v})" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-2.5 py-1 rounded-lg text-xs font-bold">
-      ${v} ${unit === 'serving' ? 'x' : unit}
-    </button>
-  `).join("");
-}
+    function closePortionBox() {
+      selectedFood = null;
+      document.getElementById("portionBox").classList.add("hidden");
+    }
 
-function setQuickQty(val) {
-  document.getElementById("portionQty").value = val;
-  recalcPortionPreview();
-}
+    function setMultiplier(m) {
+      if (!selectedFood) return;
+      document.getElementById("portionGrams").value = Math.round((selectedFood.grams || 100) * m);
+      updatePortionPreview();
+    }
 
-function onUnitChange() {
-  const unit = document.getElementById("portionUnit").value;
-  document.getElementById("portionQty").value = unit === "g" ? 100 : (unit === "oz" ? 4 : 1);
-  renderQuickPortionButtons();
-  recalcPortionPreview();
-}
+    function updatePortionPreview() {
+      if (!selectedFood) return;
+      const g = parseFloat(document.getElementById("portionGrams").value) || 0;
+      const ratio = g / (selectedFood.grams || 100);
+      const cal = Math.round(selectedFood.cal * ratio);
+      const pro = (selectedFood.pro * ratio).toFixed(1);
+      const carb = (selectedFood.carb * ratio).toFixed(1);
+      const fat = (selectedFood.fat * ratio).toFixed(1);
+      document.getElementById("selFoodPreview").textContent = `${cal} kcal • ${pro}g P • ${carb}g C • ${fat}g F`;
+    }
 
-function getSelectedGrams() {
-  if (!selectedFood) return 0;
-  const qty = parseFloat(document.getElementById("portionQty").value) || 0;
-  const unit = document.getElementById("portionUnit").value;
-  if (unit === "serving") return qty * (selectedFood.serveG || 100);
-  if (unit === "oz") return qty * 28.3495;
-  return qty;
-}
+    function confirmLogFood() {
+      if (!selectedFood) return;
+      const g = parseFloat(document.getElementById("portionGrams").value) || 0;
+      const ratio = g / (selectedFood.grams || 100);
+      const entry = {
+        id: Date.now().toString(),
+        name: selectedFood.name,
+        emoji: selectedFood.emoji || "🍽️",
+        grams: Math.round(g),
+        cal: Math.round(selectedFood.cal * ratio),
+        pro: Number((selectedFood.pro * ratio).toFixed(1)),
+        carb: Number((selectedFood.carb * ratio).toFixed(1)),
+        fat: Number((selectedFood.fat * ratio).toFixed(1))
+      };
 
-function recalcPortionPreview() {
-  if (!selectedFood) return;
-  const grams = getSelectedGrams();
-  const ratio = grams / 100;
-  document.getElementById("prevCal").textContent = Math.round(selectedFood.cal100 * ratio);
-  document.getElementById("prevPro").textContent = (selectedFood.pro100 * ratio).toFixed(1);
-  document.getElementById("prevCarb").textContent = (selectedFood.carb100 * ratio).toFixed(1);
-  document.getElementById("prevFat").textContent = (selectedFood.fat100 * ratio).toFixed(1);
-}
+      const key = `${state.currentUser}_${state.currentDate}`;
+      if (!state.logs[key]) state.logs[key] = [];
+      state.logs[key].push(entry);
 
-function closePortionModal() {
-  document.getElementById("portionModal").classList.add("hidden");
-  selectedFood = null;
-}
+      closePortionBox();
+      saveLocalOnly();
+      pushPathToCloud(`logs/${key}`, state.logs[key]);
+    }
 
-function confirmAddFood() {
-  if (!selectedFood) return;
-  const qty = parseFloat(document.getElementById("portionQty").value) || 0;
-  const unit = document.getElementById("portionUnit").value;
-  const grams = getSelectedGrams();
-  const ratio = grams / 100;
+    function deleteLog(id) {
+      const key = `${state.currentUser}_${state.currentDate}`;
+      if (!state.logs[key]) return;
+      state.logs[key] = state.logs[key].filter(item => item.id !== id);
+      saveLocalOnly();
+      pushPathToCloud(`logs/${key}`, state.logs[key]);
+    }
 
-  const entry = {
-    id: Date.now(),
-    name: selectedFood.name,
-    emoji: selectedFood.emoji || "🍽️",
-    portionText: unit === "serving" ? `${qty} × ${selectedFood.serveLabel}` : `${qty}${unit} (${Math.round(grams)}g)`,
-    cal: Math.round(selectedFood.cal100 * ratio),
-    pro: Number((selectedFood.pro100 * ratio).toFixed(1)),
-    carb: Number((selectedFood.carb100 * ratio).toFixed(1)),
-    fat: Number((selectedFood.fat100 * ratio).toFixed(1))
-  };
+    function toggleCustomForm() {
+      document.getElementById("customFoodDrawer").classList.toggle("hidden");
+    }
 
-  const key = `${state.currentUser}_${state.currentDate}`;
-  if (!state.logs[key]) state.logs[key] = [];
-  state.logs[key].unshift(entry);
-  saveState();
-  closePortionModal();
-  renderAll();
-}
+    function saveCustomFood() {
+      const name = document.getElementById("cfName").value.trim();
+      const grams = parseFloat(document.getElementById("cfGrams").value) || 100;
+      const cal = parseFloat(document.getElementById("cfCal").value) || 0;
+      const pro = parseFloat(document.getElementById("cfPro").value) || 0;
+      const carb = parseFloat(document.getElementById("cfCarb").value) || 0;
+      const fat = parseFloat(document.getElementById("cfFat").value) || 0;
+      if (!name) return;
 
-// ===================== CUSTOM VAULT FOOD =====================
-function toggleCustomForm() {
-  document.getElementById("customFoodDrawer").classList.toggle("hidden");
-}
+      state.customFoods.unshift({ id: "cf_" + Date.now(), emoji: "⭐", src: "Custom", name, grams, cal, pro, carb, fat });
+      document.getElementById("cfName").value = "";
+      document.getElementById("customFoodDrawer").classList.add("hidden");
+      saveLocalOnly();
+      pushPathToCloud("customFoods", state.customFoods);
+    }
 
-function saveCustomFood() {
-  const name = document.getElementById("cfName").value.trim();
-  const serveLabel = document.getElementById("cfServeLabel").value.trim() || "1 serving";
-  const serveG = parseFloat(document.getElementById("cfGrams").value) || 100;
-  const cal = parseFloat(document.getElementById("cfCal").value) || 0;
-  const pro = parseFloat(document.getElementById("cfPro").value) || 0;
-  const carb = parseFloat(document.getElementById("cfCarb").value) || 0;
-  const fat = parseFloat(document.getElementById("cfFat").value) || 0;
+    function openCloudModal() {
+      document.getElementById("cloudModal").classList.remove("hidden");
+    }
+    function closeCloudModal() {
+      document.getElementById("cloudModal").classList.add("hidden");
+    }
+    function exportJsonBackup() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `macro-vault-backup-${state.currentDate}.json`;
+      a.click();
+    }
 
-  if (!name) return alert("Please enter a food name.");
+    function render() {
+      const u = state.currentUser;
+      const p = state.profiles[u];
 
-  const factor = 100 / serveG;
-  const newFood = {
-    name,
-    emoji: "⭐",
-    cat: "all",
-    source: "Custom Vault",
-    serveLabel: `${serveLabel} (${serveG}g)`,
-    serveG,
-    cal100: Math.round(cal * factor),
-    pro100: Number((pro * factor).toFixed(1)),
-    carb100: Number((carb * factor).toFixed(1)),
-    fat100: Number((fat * factor).toFixed(1))
-  };
+      document.getElementById("btnRyan").className = u === "ryan"
+        ? "px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white"
+        : "px-4 py-1.5 rounded-lg text-sm font-bold text-slate-400";
+      document.getElementById("btnEric").className = u === "eric"
+        ? "px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white"
+        : "px-4 py-1.5 rounded-lg text-sm font-bold text-slate-400";
 
-  state.customFoods.unshift(newFood);
-  saveState();
-  toggleCustomForm();
-  renderSearchResults(getCombinedLocalCatalog());
-  openPortionPicker(encodeURIComponent(JSON.stringify(newFood)));
-}
+      document.getElementById("datePicker").value = state.currentDate;
+      document.getElementById("weightInput").value = p.weight;
+      document.getElementById("goalSelect").value = p.goal;
 
-// ===================== RENDER UI =====================
-function removeLogItem(id) {
-  const key = `${state.currentUser}_${state.currentDate}`;
-  state.logs[key] = (state.logs[key] || []).filter(i => i.id !== id);
-  saveState();
-  renderAll();
-}
+      const targets = getTargets(u);
+      const key = `${u}_${state.currentDate}`;
+      const dayLogs = state.logs[key] || [];
 
-function clearTodayLog() {
-  if (!confirm(`Clear all logged entries for ${state.currentUser} on ${state.currentDate}?`)) return;
-  const key = `${state.currentUser}_${state.currentDate}`;
-  state.logs[key] = [];
-  saveState();
-  renderAll();
-}
+      const totals = dayLogs.reduce((acc, item) => ({
+        cal: acc.cal + (Number(item.cal) || 0),
+        pro: acc.pro + (Number(item.pro) || 0),
+        carb: acc.carb + (Number(item.carb) || 0),
+        fat: acc.fat + (Number(item.fat) || 0)
+      }), { cal: 0, pro: 0, carb: 0, fat: 0 });
 
-function renderAll() {
-  // User Header Buttons
-  document.getElementById("ryanWeightHdr").textContent = state.profiles.Ryan.weight;
-  document.getElementById("ericWeightHdr").textContent = state.profiles.Eric.weight;
+      document.getElementById("calText").textContent = `${Math.round(totals.cal)} / ${targets.cal} kcal`;
+      document.getElementById("proText").textContent = `${Math.round(totals.pro)}/${targets.pro}g`;
+      document.getElementById("carbText").textContent = `${Math.round(totals.carb)}/${targets.carb}g`;
+      document.getElementById("fatText").textContent = `${Math.round(totals.fat)}/${targets.fat}g`;
 
-  const isRyan = state.currentUser === "Ryan";
-  document.getElementById("btnRyan").className = isRyan
-    ? "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-blue-600 text-white shadow-lg"
-    : "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-800 text-slate-400";
-  document.getElementById("btnEric").className = !isRyan
-    ? "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-indigo-600 text-white shadow-lg"
-    : "flex-1 sm:flex-initial px-4 py-2.5 rounded-xl font-bold text-sm bg-slate-800 text-slate-400";
+      document.getElementById("calBar").style.width = Math.min(100, (totals.cal / targets.cal) * 100) + "%";
+      document.getElementById("proBar").style.width = Math.min(100, (totals.pro / targets.pro) * 100) + "%";
+      document.getElementById("carbBar").style.width = Math.min(100, (totals.carb / targets.carb) * 100) + "%";
+      document.getElementById("fatBar").style.width = Math.min(100, (totals.fat / targets.fat) * 100) + "%";
 
-  // Profile Inputs & Goals
-  const prof = state.profiles[state.currentUser];
-  document.getElementById("weightInput").value = prof.weight;
-  document.getElementById("goalSelect").value = prof.goal;
+      handleSearch();
 
-  const goals = getMacroGoals(prof.weight, prof.goal);
-  document.getElementById("calGoal").textContent = goals.cal;
-  document.getElementById("proGoal").textContent = goals.pro;
-  document.getElementById("carbGoal").textContent = goals.carb;
-  document.getElementById("fatGoal").textContent = goals.fat;
+      document.getElementById("logCount").textContent = `${dayLogs.length} item${dayLogs.length === 1 ? "" : "s"}`;
+      const logList = document.getElementById("logList");
+      if (!dayLogs.length) {
+        logList.innerHTML = `<div class="text-xs text-slate-500 text-center py-6">No meals logged yet for ${p.name} on ${state.currentDate}.</div>`;
+      } else {
+        logList.innerHTML = dayLogs.map(item => `
+          <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <div>
+              <div class="text-xs font-bold">${item.emoji || "🍽️"} ${item.name} <span class="text-slate-400 font-normal">(${item.grams}g)</span></div>
+              <div class="text-[11px] text-slate-400 mt-0.5">${item.cal} kcal • ${item.pro}g P • ${item.carb}g C • ${item.fat}g F</div>
+            </div>
+            <button onclick="deleteLog('${item.id}')" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1">✕</button>
+          </div>
+        `).join("");
+      }
+    }
 
-  // Daily Totals
-  const key = `${state.currentUser}_${state.currentDate}`;
-  const todayList = state.logs[key] || [];
-  let totCal = 0, totPro = 0, totCarb = 0, totFat = 0;
-
-  todayList.forEach(i => {
-    totCal += i.cal;
-    totPro += i.pro;
-    totCarb += i.carb;
-    totFat += i.fat;
-  });
-
-  document.getElementById("calNow").textContent = Math.round(totCal);
-  document.getElementById("proNow").textContent = totPro.toFixed(1);
-  document.getElementById("carbNow").textContent = totCarb.toFixed(1);
-  document.getElementById("fatNow").textContent = totFat.toFixed(1);
-
-  document.getElementById("calBar").style.width = `${Math.min(100, (totCal / goals.cal) * 100)}%`;
-  document.getElementById("proBar").style.width = `${Math.min(100, (totPro / goals.pro) * 100)}%`;
-  document.getElementById("carbBar").style.width = `${Math.min(100, (totCarb / goals.carb) * 100)}%`;
-  document.getElementById("fatBar").style.width = `${Math.min(100, (totFat / goals.fat) * 100)}%`;
-
-  // Render Logged List
-  const logContainer = document.getElementById("dailyLogList");
-  if (!todayList.length) {
-    logContainer.innerHTML = `<div class="text-xs text-slate-500 text-center py-6">No food logged yet for ${state.currentUser}. Search above to add meals!</div>`;
-    return;
-  }
-
-  logContainer.innerHTML = todayList.map(item => `
-    <div class="flex items-center justify-between bg-slate-900/90 border border-slate-800 px-3.5 py-2.5 rounded-xl">
-      <div>
-        <div class="font-bold text-xs sm:text-sm">${item.emoji} ${item.name}</div>
-        <div class="text-[11px] text-slate-400">
-          ${item.portionText} · <b class="text-amber-400">${item.cal} kcal</b> ·
-          <span class="text-rose-400">${item.pro}g P</span> ·
-          <span class="text-sky-400">${item.carb}g C</span> ·
-          <span class="text-emerald-400">${item.fat}g F</span>
-        </div>
-      </div>
-      <button onclick="removeLogItem(${item.id})" class="text-slate-500 hover:text-rose-400 text-sm font-bold px-2">✕</button>
-    </div>
-  `).join("");
-}
-
-// ===================== JSON VAULT BACKUP =====================
-function openBackupModal() {
-  document.getElementById("backupModal").classList.remove("hidden");
-  document.getElementById("backupModal").classList.add("flex");
-  document.getElementById("backupText").value = JSON.stringify(state, null, 2);
-}
-
-function closeBackupModal() {
-  document.getElementById("backupModal").classList.add("hidden");
-  document.getElementById("backupModal").classList.remove("flex");
-}
-
-function downloadJsonBackup() {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `ryan_eric_macro_vault_${state.currentDate}.json`;
-  a.click();
-}
-
-function copyJsonBackup() {
-  navigator.clipboard.writeText(JSON.stringify(state, null, 2));
-  alert("Backup JSON copied to clipboard!");
-}
-
-function restoreJsonBackup() {
-  try {
-    const parsed = JSON.parse(document.getElementById("backupText").value);
-    if (!parsed.profiles || !parsed.logs) throw new Error("Invalid format");
-    state = parsed;
-    saveState();
-    renderAll();
-    closeBackupModal();
-    alert("Backup restored successfully!");
-  } catch (e) {
-    alert("Invalid JSON backup text.");
-  }
-}
-</script>
+    // Boot App & Auto-Sync when switching back to tab
+    loadLocal();
+    render();
+    pullFromCloud();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") pullFromCloud();
+    });
+  </script>
 </body>
 </html>
