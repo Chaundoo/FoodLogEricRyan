@@ -201,6 +201,7 @@
       <p class="text-xs text-slate-300 leading-relaxed">
         Connected to <span class="text-emerald-400 font-semibold">ryan-eric-macros-default-rtdb</span>. Every meal, weight update, and custom vault food saves automatically across both phones.
       </p>
+      <p id="syncDetail" class="text-[11px] text-slate-400"></p>
       <div class="flex gap-2">
         <button onclick="forceFullSync()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-xs font-bold py-2.5 rounded-xl">
           🔄 Force Sync Now
@@ -221,6 +222,7 @@
     const FIREBASE_BASE_URL = `https://${FB_PROJECT}.${FB_DOMAIN}/vault_4582`;
 
     const STORAGE_KEY = "RYAN_ERIC_MACRO_VAULT_V3";
+    const PENDING_KEY = "RYAN_ERIC_PENDING_WRITES";
     const LOCAL_USER_KEY = "RYAN_ERIC_ACTIVE_USER";
     const PIN_CODE = "4582";
 
@@ -242,19 +244,50 @@
       { id: "f15", emoji: "🥡", name: "Panda Express Teriyaki Chicken (1 Entree)", src: "Fast Food", grams: 170, cal: 340, pro: 41.0, carb: 14.0, fat: 13.0 }
     ];
 
+    // FIX: use the phone's LOCAL date (toISOString() is UTC, so after 5pm in
+    // California it was logging meals under tomorrow's date).
+    function todayLocal() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
     let state = {
       currentUser: localStorage.getItem(LOCAL_USER_KEY) || "ryan",
-      currentDate: new Date().toISOString().split("T")[0],
+      currentDate: todayLocal(),
       profiles: {
         ryan: { name: "Ryan", weight: 154, goal: "bulk" },
         eric: { name: "Eric", weight: 151, goal: "bulk" }
       },
       customFoods: DEFAULT_FOODS,
+      // logs: { "ryan_2026-10-19": { "<entryId>": {...entry} } }  (mirrors Firebase)
       logs: {}
     };
 
     let selectedFood = null;
-    let isPulling = false;
+    let pendingWrites = [];
+    try { pendingWrites = JSON.parse(localStorage.getItem(PENDING_KEY) || "[]"); } catch (e) { pendingWrites = []; }
+
+    // ---------- Helpers for Firebase shapes (arrays OR keyed objects) ----------
+    // Old data was saved as arrays; Firebase may return arrays or objects. This
+    // turns either into a list and remembers each item's Firebase key in _k.
+    function entriesOf(node) {
+      if (!node || typeof node !== "object") return [];
+      return Object.entries(node)
+        .filter(([, v]) => v && typeof v === "object")
+        .map(([k, v]) => ({ ...v, _k: k }));
+    }
+
+    function mergeWithDefaults(foodsNode) {
+      const list = entriesOf(foodsNode).map(({ _k, ...f }) => ({ ...f, id: f.id || _k }));
+      const ids = new Set(list.map(f => f.id));
+      DEFAULT_FOODS.forEach(df => { if (!ids.has(df.id)) list.push(df); });
+      // Custom foods first (newest first), then the rest
+      return list.sort((a, b) => {
+        const ac = String(a.id).startsWith("cf_"), bc = String(b.id).startsWith("cf_");
+        if (ac !== bc) return ac ? -1 : 1;
+        return ac ? String(b.id).localeCompare(String(a.id)) : 0;
+      });
+    }
 
     function loadLocal() {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -262,17 +295,12 @@
         try {
           const parsed = JSON.parse(saved);
           state = { ...state, ...parsed };
-          // Merge default foods with any user-created custom foods
-          const existingIds = new Set((state.customFoods || []).map(f => f.id));
-          const mergedFoods = [...(state.customFoods || [])];
-          DEFAULT_FOODS.forEach(df => {
-            if (!existingIds.has(df.id)) mergedFoods.push(df);
-          });
-          state.customFoods = mergedFoods;
+          state.customFoods = mergeWithDefaults(state.customFoods);
+          state.logs = state.logs || {};
         } catch (e) {}
       }
       state.currentUser = localStorage.getItem(LOCAL_USER_KEY) || state.currentUser || "ryan";
-      state.currentDate = new Date().toISOString().split("T")[0];
+      state.currentDate = todayLocal();
     }
 
     function saveLocalOnly() {
@@ -281,78 +309,133 @@
       render();
     }
 
-    function updateBadge(text, classes) {
+    function updateBadge(text, classes, detail) {
       const b = document.getElementById("syncBadge");
       if (!b) return;
       b.textContent = text;
       b.className = "px-3 py-1.5 rounded-full text-xs font-bold border transition " + classes;
+      const d = document.getElementById("syncDetail");
+      if (d) d.textContent = detail || "";
+    }
+    const BADGE_OK = "bg-emerald-950 border-emerald-700 text-emerald-300";
+    const BADGE_BUSY = "bg-blue-950 border-blue-700 text-blue-300";
+    const BADGE_WARN = "bg-amber-950 border-amber-700 text-amber-300";
+    const BADGE_ERR = "bg-rose-950 border-rose-700 text-rose-300";
+
+    // ---------- Writing to the cloud ----------
+    // FIX: writes are queued (and saved to localStorage) instead of being silently
+    // dropped while a pull is running or when offline. Each meal/food is written
+    // to its OWN path, so two phones logging at once never overwrite each other.
+    function queueWrite(path, data, method = "PUT") {
+      pendingWrites.push({ path, data, method });
+      localStorage.setItem(PENDING_KEY, JSON.stringify(pendingWrites));
+      flushWrites();
     }
 
-    // Atomic Cloud Push: Only updates the specific changed path so brothers never overwrite each other
-    async function pushPathToCloud(subPath, dataObj) {
-      if (isPulling) return;
-      try {
-        updateBadge("⏳ Saving...", "bg-blue-950 border-blue-700 text-blue-300");
-        const res = await fetch(`${FIREBASE_BASE_URL}/${subPath}.json`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(dataObj)
-        });
-        if (res.ok) updateBadge("☁️ Auto-Synced", "bg-emerald-950 border-emerald-700 text-emerald-300");
-        else updateBadge("⚠️ Sync Error", "bg-rose-950 border-rose-700 text-rose-300");
-      } catch (e) {
-        updateBadge("⚠️ Offline (Saved Locally)", "bg-amber-950 border-amber-700 text-amber-300");
-      }
+    let flushing = null;
+    function flushWrites() {
+      if (flushing) return flushing;
+      flushing = (async () => {
+        while (pendingWrites.length) {
+          const w = pendingWrites[0];
+          updateBadge("⏳ Saving...", BADGE_BUSY);
+          let res;
+          try {
+            res = await fetch(`${FIREBASE_BASE_URL}/${w.path}.json`, {
+              method: w.method,
+              headers: { "Content-Type": "application/json" },
+              body: w.method === "DELETE" ? undefined : JSON.stringify(w.data)
+            });
+          } catch (e) {
+            updateBadge("⚠️ Offline (Saved Locally)", BADGE_WARN, "Will upload automatically when you're back online.");
+            return false;
+          }
+          if (!res.ok) {
+            updateBadge("⚠️ Sync Error", BADGE_ERR, `Firebase refused the save (HTTP ${res.status}). ${res.status === 401 || res.status === 403 ? "Your database rules are blocking access — check Realtime Database → Rules in the Firebase console." : ""}`);
+            return false;
+          }
+          pendingWrites.shift();
+          localStorage.setItem(PENDING_KEY, JSON.stringify(pendingWrites));
+        }
+        updateBadge("☁️ Auto-Synced", BADGE_OK);
+        return true;
+      })().finally(() => { flushing = null; });
+      return flushing;
     }
 
-    // Pull latest shared state from Firebase
-    async function pullFromCloud() {
-      try {
-        isPulling = true;
-        updateBadge("🔄 Syncing...", "bg-blue-950 border-blue-700 text-blue-300");
-        const res = await fetch(`${FIREBASE_BASE_URL}.json?t=${Date.now()}`);
-        if (!res.ok) throw new Error("HTTP error");
-        const cloud = await res.json();
+    // ---------- Reading from the cloud ----------
+    let pulling = null;
+    function pullFromCloud() {
+      if (pulling) return pulling;
+      pulling = (async () => {
+        // Upload anything still waiting first, so the pull can't erase it
+        const flushed = await flushWrites();
+        if (!flushed) return;
+        try {
+          const res = await fetch(`${FIREBASE_BASE_URL}.json?t=${Date.now()}`);
+          if (!res.ok) {
+            updateBadge("⚠️ Sync Error", BADGE_ERR, `Firebase refused the read (HTTP ${res.status}). ${res.status === 401 || res.status === 403 ? "Your database rules are blocking access — check Realtime Database → Rules in the Firebase console." : ""}`);
+            return;
+          }
+          const cloud = await res.json();
+          if (pendingWrites.length) return; // a new local change came in mid-pull; next pull will catch up
 
-        // First-time initialization if database is empty
-        if (!cloud) {
-          isPulling = false;
-          await fetch(`${FIREBASE_BASE_URL}.json`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              profiles: state.profiles,
-              customFoods: state.customFoods,
-              logs: state.logs
-            })
-          });
-          updateBadge("☁️ Auto-Synced", "bg-emerald-950 border-emerald-700 text-emerald-300");
-          return;
-        }
+          if (!cloud) {
+            // First-time setup: upload what this phone has
+            queueWrite("profiles", state.profiles);
+            state.customFoods.filter(f => String(f.id).startsWith("cf_"))
+              .forEach(f => queueWrite(`customFoods/${f.id}`, f));
+            Object.entries(state.logs).forEach(([k, v]) => {
+              entriesOf(v).forEach(({ _k, ...e }) => queueWrite(`logs/${k}/${e.id || _k}`, e));
+            });
+            return;
+          }
 
-        if (cloud.profiles) {
-          state.profiles = { ...state.profiles, ...cloud.profiles };
+          applyCloud(cloud);
+          updateBadge("☁️ Auto-Synced", BADGE_OK, "Last synced " + new Date().toLocaleTimeString());
+        } catch (e) {
+          updateBadge("⚠️ Offline Mode", BADGE_WARN, "Showing what's saved on this phone.");
         }
-        if (cloud.customFoods && Array.isArray(cloud.customFoods)) {
-          const cloudIds = new Set(cloud.customFoods.map(f => f.id));
-          const combined = [...cloud.customFoods];
-          DEFAULT_FOODS.forEach(df => {
-            if (!cloudIds.has(df.id)) combined.push(df);
-          });
-          state.customFoods = combined;
-        }
-        if (cloud.logs) {
-          state.logs = { ...state.logs, ...cloud.logs };
-        }
-
-        saveLocalOnly();
-        updateBadge("☁️ Auto-Synced", "bg-emerald-950 border-emerald-700 text-emerald-300");
-      } catch (e) {
-        updateBadge("⚠️ Offline Mode", "bg-amber-950 border-amber-700 text-amber-300");
-      } finally {
-        isPulling = false;
-      }
+      })().finally(() => { pulling = null; });
+      return pulling;
     }
+
+    // FIX: the cloud is the source of truth. The old version merged
+    // {...local, ...cloud}, so meals deleted on one phone came back on the other.
+    function applyCloud(cloud) {
+      state.profiles = {
+        ryan: { name: "Ryan", weight: 154, goal: "bulk", ...(cloud.profiles?.ryan || {}) },
+        eric: { name: "Eric", weight: 151, goal: "bulk", ...(cloud.profiles?.eric || {}) }
+      };
+      state.customFoods = mergeWithDefaults(cloud.customFoods);
+      state.logs = cloud.logs || {};
+      saveLocalOnly();
+    }
+
+    // ---------- LIVE updates: hear the other phone's changes instantly ----------
+    // FIX: the old app only pulled on load / tab switch, so you never saw your
+    // brother's entries until you reopened the page. Firebase's REST API supports
+    // a live stream (Server-Sent Events); any change triggers a refresh.
+    let stream = null, refreshTimer = null;
+    function scheduleRefresh() {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(pullFromCloud, 300);
+    }
+    function startLiveSync() {
+      if (stream || typeof EventSource === "undefined") return;
+      stream = new EventSource(`${FIREBASE_BASE_URL}.json`);
+      stream.addEventListener("put", scheduleRefresh);
+      stream.addEventListener("patch", scheduleRefresh);
+      stream.addEventListener("cancel", () => {
+        updateBadge("⚠️ Sync Error", BADGE_ERR, "Firebase rules are blocking live updates.");
+      });
+      // EventSource reconnects on its own after errors
+    }
+    // Backup: poll every 20s in case the live stream is down
+    setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      if (!stream || stream.readyState !== 1) pullFromCloud();
+    }, 20000);
 
     async function forceFullSync() {
       closeCloudModal();
@@ -397,7 +480,7 @@
     }
 
     function changeDate(d) {
-      state.currentDate = d;
+      state.currentDate = d || todayLocal();
       render();
       pullFromCloud();
     }
@@ -408,7 +491,7 @@
       p.weight = parseFloat(document.getElementById("weightInput").value) || p.weight;
       p.goal = document.getElementById("goalSelect").value;
       saveLocalOnly();
-      pushPathToCloud(`profiles/${u}`, p);
+      queueWrite(`profiles/${u}`, p);
     }
 
     function normalizeStr(s) {
@@ -432,7 +515,9 @@
       `).join("");
     }
 
+    let showingOnlineResults = false;
     function handleSearch() {
+      showingOnlineResults = false;
       const raw = document.getElementById("searchInput").value.trim();
       const q = normalizeStr(raw);
       if (!q) {
@@ -467,6 +552,7 @@
           fat: Number(p.nutriments?.fat_100g || 0)
         })).filter(x => x.cal > 0);
         renderFoodGrid(products.length ? products : state.customFoods);
+        showingOnlineResults = products.length > 0;
       } catch (e) {
         renderFoodGrid(state.customFoods);
       }
@@ -518,20 +604,30 @@
       };
 
       const key = `${state.currentUser}_${state.currentDate}`;
-      if (!state.logs[key]) state.logs[key] = [];
-      state.logs[key].push(entry);
+      if (!state.logs[key] || Array.isArray(state.logs[key])) {
+        // convert any old array-style day into keyed form locally
+        const obj = {};
+        entriesOf(state.logs[key]).forEach(({ _k, ...e }) => { obj[_k] = e; });
+        state.logs[key] = obj;
+      }
+      state.logs[key][entry.id] = entry;
 
       closePortionBox();
       saveLocalOnly();
-      pushPathToCloud(`logs/${key}`, state.logs[key]);
+      queueWrite(`logs/${key}/${entry.id}`, entry);
     }
 
-    function deleteLog(id) {
+    function deleteLog(fbKey) {
       const key = `${state.currentUser}_${state.currentDate}`;
       if (!state.logs[key]) return;
-      state.logs[key] = state.logs[key].filter(item => item.id !== id);
+      if (Array.isArray(state.logs[key])) {
+        const obj = {};
+        entriesOf(state.logs[key]).forEach(({ _k, ...e }) => { obj[_k] = e; });
+        state.logs[key] = obj;
+      }
+      delete state.logs[key][fbKey];
       saveLocalOnly();
-      pushPathToCloud(`logs/${key}`, state.logs[key]);
+      queueWrite(`logs/${key}/${fbKey}`, null, "DELETE");
     }
 
     function toggleCustomForm() {
@@ -547,11 +643,14 @@
       const fat = parseFloat(document.getElementById("cfFat").value) || 0;
       if (!name) return;
 
-      state.customFoods.unshift({ id: "cf_" + Date.now(), emoji: "⭐", src: "Custom", name, grams, cal, pro, carb, fat });
-      document.getElementById("cfName").value = "";
+      const food = { id: "cf_" + Date.now(), emoji: "⭐", src: "Custom", name, grams, cal, pro, carb, fat };
+      state.customFoods.unshift(food);
+      ["cfName", "cfGrams", "cfCal", "cfPro", "cfCarb", "cfFat"].forEach(id => document.getElementById(id).value = "");
       document.getElementById("customFoodDrawer").classList.add("hidden");
       saveLocalOnly();
-      pushPathToCloud("customFoods", state.customFoods);
+      // FIX: save just this food, not the whole list (which could erase a food
+      // your brother added a second ago)
+      queueWrite(`customFoods/${food.id}`, food);
     }
 
     function openCloudModal() {
@@ -579,13 +678,18 @@
         ? "px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white"
         : "px-4 py-1.5 rounded-lg text-sm font-bold text-slate-400";
 
-      document.getElementById("datePicker").value = state.currentDate;
-      document.getElementById("weightInput").value = p.weight;
-      document.getElementById("goalSelect").value = p.goal;
+      // Don't overwrite a field while someone is typing in it (live sync re-renders)
+      const active = document.activeElement;
+      const datePicker = document.getElementById("datePicker");
+      const weightInput = document.getElementById("weightInput");
+      const goalSelect = document.getElementById("goalSelect");
+      if (active !== datePicker) datePicker.value = state.currentDate;
+      if (active !== weightInput) weightInput.value = p.weight;
+      if (active !== goalSelect) goalSelect.value = p.goal;
 
       const targets = getTargets(u);
       const key = `${u}_${state.currentDate}`;
-      const dayLogs = state.logs[key] || [];
+      const dayLogs = entriesOf(state.logs[key]).sort((a, b) => String(a.id).localeCompare(String(b.id)));
 
       const totals = dayLogs.reduce((acc, item) => ({
         cal: acc.cal + (Number(item.cal) || 0),
@@ -604,7 +708,8 @@
       document.getElementById("carbBar").style.width = Math.min(100, (totals.carb / targets.carb) * 100) + "%";
       document.getElementById("fatBar").style.width = Math.min(100, (totals.fat / targets.fat) * 100) + "%";
 
-      handleSearch();
+      // Keep online search results on screen if a live update arrives
+      if (!showingOnlineResults) handleSearch();
 
       document.getElementById("logCount").textContent = `${dayLogs.length} item${dayLogs.length === 1 ? "" : "s"}`;
       const logList = document.getElementById("logList");
@@ -617,19 +722,21 @@
               <div class="text-xs font-bold">${item.emoji || "🍽️"} ${item.name} <span class="text-slate-400 font-normal">(${item.grams}g)</span></div>
               <div class="text-[11px] text-slate-400 mt-0.5">${item.cal} kcal • ${item.pro}g P • ${item.carb}g C • ${item.fat}g F</div>
             </div>
-            <button onclick="deleteLog('${item.id}')" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1">✕</button>
+            <button onclick="deleteLog('${item._k}')" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1">✕</button>
           </div>
         `).join("");
       }
     }
 
-    // Boot App & Auto-Sync when switching back to tab
+    // Boot App, start live sync, and refresh when switching back to the tab
     loadLocal();
     render();
     pullFromCloud();
+    startLiveSync();
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") pullFromCloud();
     });
+    window.addEventListener("online", pullFromCloud);
   </script>
 </body>
 </html>
