@@ -689,7 +689,7 @@
 
       const targets = getTargets(u);
       const key = `${u}_${state.currentDate}`;
-      const dayLogs = entriesOf(state.logs[key]).sort((a, b) => String(a.id).localeCompare(String(b.id)));
+      const dayLogs = entriesOf(state.logs[key]).sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
 
       const totals = dayLogs.reduce((acc, item) => ({
         cal: acc.cal + (Number(item.cal) || 0),
