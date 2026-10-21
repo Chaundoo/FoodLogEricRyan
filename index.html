@@ -12,6 +12,12 @@
     input:focus, select:focus { outline: 2px solid #3b82f6; border-color: transparent; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    /* Mixed-dish slider: big round dot on a bar */
+    .mix-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 999px; outline: none; border: 0;
+      background: linear-gradient(to right, #10b981 0%, #10b981 var(--a, 50%), #f43f5e var(--a, 50%), #f43f5e 100%); }
+    .mix-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; border-radius: 50%; background: #f8fafc; border: 4px solid #0f172a; box-shadow: 0 0 0 2px #f8fafc; cursor: pointer; }
+    .mix-slider::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: #f8fafc; border: 4px solid #0f172a; cursor: pointer; }
+    .mix-slider:focus { outline: none; }
   </style>
 </head>
 <body class="min-h-screen pb-12">
@@ -118,11 +124,16 @@
 
     <!-- CARD 2: SMART SEARCH, KIOSK VAULT & PORTION PICKER -->
     <div class="card p-5 shadow-lg space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="font-bold text-base">🍽️ Quick Log & Smart Search</h2>
-        <button onclick="toggleCustomForm()" class="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 py-1.5 rounded-lg border border-slate-700">
-          + New Vault Food
-        </button>
+      <div class="flex items-center justify-between gap-2 flex-wrap">
+        <h2 class="font-bold text-base">🍽️ Quick Log</h2>
+        <div class="flex gap-1.5">
+          <button onclick="openCombo()" class="whitespace-nowrap text-xs bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-3 py-1.5 rounded-lg border border-slate-700">
+            🥘 Mixed Dish
+          </button>
+          <button onclick="toggleCustomForm()" class="whitespace-nowrap text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 font-bold px-3 py-1.5 rounded-lg border border-slate-700">
+            + Vault Food
+          </button>
+        </div>
       </div>
 
       <!-- Custom Food Creator Drawer -->
@@ -141,6 +152,40 @@
         </div>
       </div>
 
+      <!-- Mixed Dish Builder (two foods cooked together, split with a slider) -->
+      <div id="comboBox" class="hidden bg-slate-900 p-4 rounded-xl border border-amber-500/40 space-y-3">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-bold text-sm">🥘 Mixed Dish</div>
+            <div id="comboHint" class="text-[11px] text-amber-300 mt-0.5">Tap a slot, then tap a food below (vault, recents, or online search)</div>
+          </div>
+          <button onclick="closeCombo()" class="text-slate-400 hover:text-white text-xs">✕</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="comboSlotA" onclick="setComboPick('a')" class="text-left text-xs p-2.5 rounded-xl border-2 bg-slate-950"></button>
+          <button id="comboSlotB" onclick="setComboPick('b')" class="text-left text-xs p-2.5 rounded-xl border-2 bg-slate-950"></button>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-400">Whole dish (g):</label>
+          <input id="comboGrams" type="number" step="1" value="300" oninput="updateComboPreview()" class="w-24 text-sm font-bold px-2.5 py-1.5 rounded-lg" />
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] font-bold mb-2">
+            <span id="comboLabelA" class="text-emerald-400 max-w-[48%] truncate">Food A</span>
+            <span id="comboLabelB" class="text-rose-400 max-w-[48%] truncate text-right">Food B</span>
+          </div>
+          <input id="comboSlider" type="range" min="0" max="100" step="5" value="50" oninput="updateComboPreview()" class="mix-slider" />
+          <div class="flex justify-between text-[11px] mt-2">
+            <span id="comboSplitA" class="text-slate-300"></span>
+            <span id="comboSplitB" class="text-slate-300 text-right"></span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div id="comboPreview" class="flex-1 text-xs text-slate-400"></div>
+          <button onclick="confirmLogCombo()" class="bg-emerald-600 hover:bg-emerald-500 text-sm font-bold px-4 py-2 rounded-xl">+ Log Dish</button>
+        </div>
+      </div>
+
       <!-- Smart Search Bar -->
       <div class="flex gap-2">
         <input id="searchInput" type="text" oninput="handleSearch()" onkeydown="if(event.key==='Enter')searchOnline()" placeholder="Search vault, food name, or barcode #..."
@@ -148,6 +193,12 @@
         <button onclick="searchOnline()" class="bg-indigo-600 hover:bg-indigo-500 text-xs font-bold px-3.5 rounded-xl shrink-0">
           🌐 Online DB
         </button>
+      </div>
+
+      <!-- Recently logged (shared by both of you) -->
+      <div id="recentWrap" class="hidden">
+        <div class="text-[11px] font-bold text-slate-400 mb-1.5">🕘 Recent</div>
+        <div id="recentRow" class="flex gap-2 overflow-x-auto pb-1"></div>
       </div>
 
       <!-- Food Kiosk Grid -->
@@ -247,7 +298,9 @@
       { id: "f16", emoji: "🥟", name: "Bibigo Beef Bulgogi Mandu XL (2 Dumplings)", src: "Label", grams: 70, cal: 160, pro: 6, carb: 16, fat: 8 },
       { id: "f17", emoji: "🥤", name: "Glucerna Hunger Smart Powder (1 Scoop)", src: "Label", grams: 31, cal: 120, pro: 22, carb: 3, fat: 2 },
       { id: "f18", emoji: "🥩", name: "Chomps Grass-Fed Beef Stick (1 Stick)", src: "Label", grams: 32, cal: 100, pro: 10, carb: 0, fat: 7 },
-      { id: "f19", emoji: "💪", name: "Super Advanced Whey Protein (2 Scoops, 12g BCAA)", src: "Label", grams: 90, cal: 360, pro: 60, carb: 14, fat: 8 }
+      { id: "f19", emoji: "💪", name: "Super Advanced Whey Protein (2 Scoops, 12g BCAA)", src: "Label", grams: 90, cal: 360, pro: 60, carb: 14, fat: 8 },
+      { id: "f20", emoji: "🥬", name: "Bok Choy / Baby Bok Choy (Cooked)", src: "USDA", grams: 100, cal: 12, pro: 1.6, carb: 1.8, fat: 0.2 },
+      { id: "f21", emoji: "🐖", name: "Ground Pork (Cooked)", src: "USDA", grams: 100, cal: 297, pro: 25.7, carb: 0, fat: 20.8 }
     ];
 
     // Online food databases. Personal USDA FoodData Central key (about 1,000 searches/hour).
@@ -555,6 +608,7 @@
       showingOnlineResults = false;
       const raw = document.getElementById("searchInput").value.trim();
       const q = normalizeStr(raw);
+      renderRecents(!q);
       if (!q) {
         renderFoodGrid(state.customFoods);
         return;
@@ -647,6 +701,7 @@
       ].filter(Boolean);
       const note = failed.length ? `<div class="col-span-3 text-[10px] text-amber-400 text-center">⚠️ ${failed.join(" & ")} unavailable right now</div>` : "";
       showingOnlineResults = results.length > 0;
+      renderRecents(false);
       renderFoodGrid(results, `<div class="col-span-3 text-xs text-slate-400 py-4 text-center">No online results for "${esc(q)}".</div>${note}`);
       if (results.length && note) document.getElementById("foodGrid").insertAdjacentHTML("afterbegin", note);
     }
@@ -660,11 +715,13 @@
       queueWrite(`customFoods/${food.id}`, food);
     }
 
-    function selectFoodItem(f) {
+    function selectFoodItem(f, defaultGrams) {
+      // While building a mixed dish, tapped foods fill its slots instead
+      if (!document.getElementById("comboBox").classList.contains("hidden")) { pickComboFood(f); return; }
       selectedFood = f;
       document.getElementById("portionBox").classList.remove("hidden");
       document.getElementById("selFoodTitle").textContent = `${f.emoji || "🍽️"} ${f.name}`;
-      document.getElementById("portionGrams").value = f.grams || 100;
+      document.getElementById("portionGrams").value = defaultGrams || f.grams || 100;
       const isOnline = /^(usda|off)_/.test(String(f.id));
       document.getElementById("saveVaultBtn").classList.toggle("hidden", !isOnline);
       updatePortionPreview();
@@ -704,9 +761,14 @@
         cal: Math.round(selectedFood.cal * ratio),
         pro: Number((selectedFood.pro * ratio).toFixed(1)),
         carb: Number((selectedFood.carb * ratio).toFixed(1)),
-        fat: Number((selectedFood.fat * ratio).toFixed(1))
+        fat: Number((selectedFood.fat * ratio).toFixed(1)),
+        base: baseOf(selectedFood) // remembered for the Recent list
       };
+      closePortionBox();
+      addLogEntry(entry);
+    }
 
+    function addLogEntry(entry) {
       const key = `${state.currentUser}_${state.currentDate}`;
       if (!state.logs[key] || Array.isArray(state.logs[key])) {
         // convert any old array-style day into keyed form locally
@@ -715,10 +777,129 @@
         state.logs[key] = obj;
       }
       state.logs[key][entry.id] = entry;
-
-      closePortionBox();
       saveLocalOnly();
       queueWrite(`logs/${key}/${entry.id}`, entry);
+    }
+
+    // Just the nutrition info needed to re-log a food later
+    function baseOf(f) {
+      return { name: f.name, emoji: f.emoji || "🍽️", grams: Number(f.grams) || 100,
+               cal: Number(f.cal) || 0, pro: Number(f.pro) || 0, carb: Number(f.carb) || 0, fat: Number(f.fat) || 0 };
+    }
+
+    // ---------- RECENT: everything either of you has logged, newest first ----------
+    let recentItems = [];
+    const entryTime = e => { const n = Number(e.id) || 0; return n > 1e14 ? n / 1000 : n; };
+    function getRecents(limit = 12) {
+      const all = [];
+      Object.values(state.logs || {}).forEach(day => entriesOf(day).forEach(e => all.push(e)));
+      all.sort((a, b) => entryTime(b) - entryTime(a));
+      const seen = new Set(), out = [];
+      for (const e of all) {
+        const k = e.combo ? "combo:" + e.combo.a.name + "|" + e.combo.b.name : "food:" + e.name;
+        if (seen.has(k)) continue;
+        seen.add(k); out.push(e);
+        if (out.length >= limit) break;
+      }
+      return out;
+    }
+    function renderRecents(show) {
+      recentItems = show && !showingOnlineResults ? getRecents() : [];
+      document.getElementById("recentWrap").classList.toggle("hidden", !recentItems.length);
+      document.getElementById("recentRow").innerHTML = recentItems.map((e, i) => `
+        <button onclick="useRecent(${i})" class="shrink-0 max-w-[11rem] bg-slate-900 hover:bg-slate-800 border border-slate-700 px-2.5 py-1.5 rounded-xl text-left">
+          <div class="text-[11px] font-bold truncate">${esc(e.emoji || "🍽️")} ${esc(e.name)}</div>
+          <div class="text-[10px] text-slate-400">${esc(e.grams)}g • ${Math.round(e.cal)} kcal</div>
+        </button>`).join("");
+    }
+    function useRecent(i) {
+      const e = recentItems[i];
+      if (!e) return;
+      if (e.combo) { openCombo(e.combo.a, e.combo.b, e.combo.pctB, e.grams); return; }
+      // Old entries have no saved base, so use the entry itself
+      const base = e.base || baseOf(e);
+      selectFoodItem({ ...base, id: "recent_" + e.id, src: "Recent" }, e.grams);
+    }
+
+    // ---------- MIXED DISH: one weight, split between two foods with a slider ----------
+    let combo = { a: null, b: null, pick: "a" };
+    const FRACTIONS = [[1,8,"⅛"],[1,5,"⅕"],[1,4,"¼"],[1,3,"⅓"],[2,5,"⅖"],[1,2,"½"],[3,5,"⅗"],[2,3,"⅔"],[3,4,"¾"],[4,5,"⅘"],[7,8,"⅞"]];
+    function fractionLabel(pct) {
+      if (pct <= 0) return "none";
+      if (pct >= 100) return "all";
+      const near = FRACTIONS.find(([n, d]) => Math.abs(pct - 100 * n / d) < 2.5);
+      return near ? `${near[2]} (${pct}%)` : `${pct}%`;
+    }
+    function openCombo(a = null, b = null, pctB = 50, grams = null) {
+      closePortionBox();
+      combo = { a: a ? baseOf(a) : null, b: b ? baseOf(b) : null, pick: !a ? "a" : (!b ? "b" : "a") };
+      document.getElementById("comboSlider").value = pctB;
+      if (grams) document.getElementById("comboGrams").value = grams;
+      document.getElementById("comboBox").classList.remove("hidden");
+      updateComboPreview();
+      document.getElementById("comboBox").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    function closeCombo() {
+      document.getElementById("comboBox").classList.add("hidden");
+    }
+    function setComboPick(slot) { combo.pick = slot; updateComboPreview(); }
+    function pickComboFood(f) {
+      combo[combo.pick] = baseOf(f);
+      const other = combo.pick === "a" ? "b" : "a";
+      if (!combo[other]) combo.pick = other;
+      updateComboPreview();
+    }
+    function comboSplit() {
+      const total = parseFloat(document.getElementById("comboGrams").value) || 0;
+      const pctB = Number(document.getElementById("comboSlider").value);
+      const gB = Math.round(total * pctB / 100), gA = Math.round(total) - gB;
+      const part = (f, g) => {
+        if (!f) return { cal: 0, pro: 0, carb: 0, fat: 0 };
+        const r = g / (f.grams || 100);
+        return { cal: f.cal * r, pro: f.pro * r, carb: f.carb * r, fat: f.fat * r };
+      };
+      const pa = part(combo.a, gA), pb = part(combo.b, gB);
+      return { total, pctB, gA, gB,
+        cal: Math.round(pa.cal + pb.cal), pro: round1(pa.pro + pb.pro),
+        carb: round1(pa.carb + pb.carb), fat: round1(pa.fat + pb.fat) };
+    }
+    function updateComboPreview() {
+      const slot = (key, label) => {
+        const f = combo[key], active = combo.pick === key;
+        const el = document.getElementById(key === "a" ? "comboSlotA" : "comboSlotB");
+        el.className = "text-left text-xs p-2.5 rounded-xl border-2 bg-slate-950 " +
+          (active ? (key === "a" ? "border-emerald-400" : "border-rose-400") : "border-slate-700");
+        el.innerHTML = f
+          ? `<div class="text-[10px] text-slate-400">${label}${active ? " • tap a food to swap" : ""}</div><div class="font-bold truncate">${esc(f.emoji)} ${esc(f.name)}</div>`
+          : `<div class="text-[10px] text-slate-400">${label}</div><div class="font-bold ${active ? "text-amber-300" : "text-slate-500"}">${active ? "👇 Tap a food below" : "Tap to choose"}</div>`;
+      };
+      slot("a", "Left side");
+      slot("b", "Right side");
+      const s = comboSplit();
+      document.getElementById("comboSlider").style.setProperty("--a", (100 - s.pctB) + "%");
+      document.getElementById("comboLabelA").textContent = combo.a ? `${combo.a.emoji} ${combo.a.name}` : "Left food";
+      document.getElementById("comboLabelB").textContent = combo.b ? `${combo.b.emoji} ${combo.b.name}` : "Right food";
+      document.getElementById("comboSplitA").textContent = `${fractionLabel(100 - s.pctB)} • ${s.gA}g`;
+      document.getElementById("comboSplitB").textContent = `${fractionLabel(s.pctB)} • ${s.gB}g`;
+      document.getElementById("comboHint").textContent = combo.a && combo.b
+        ? "Slide the dot toward whichever food there's more of"
+        : "Tap a slot, then tap a food below (vault, recents, or online search)";
+      document.getElementById("comboPreview").textContent = combo.a && combo.b
+        ? `${s.cal} kcal • ${s.pro}g P • ${s.carb}g C • ${s.fat}g F` : "";
+    }
+    function confirmLogCombo() {
+      if (!combo.a || !combo.b) { updateComboPreview(); return; }
+      const s = comboSplit();
+      if (!s.total) return;
+      addLogEntry({
+        id: newId(),
+        name: `${combo.a.name} + ${combo.b.name}`,
+        emoji: "🥘",
+        grams: Math.round(s.total),
+        cal: s.cal, pro: s.pro, carb: s.carb, fat: s.fat,
+        combo: { a: combo.a, b: combo.b, pctB: s.pctB, gA: s.gA, gB: s.gB }
+      });
+      closeCombo();
     }
 
     function deleteLog(fbKey) {
@@ -823,7 +1004,8 @@
         logList.innerHTML = dayLogs.map(item => `
           <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
             <div>
-              <div class="text-xs font-bold">${item.emoji || "🍽️"} ${item.name} <span class="text-slate-400 font-normal">(${item.grams}g)</span></div>
+              <div class="text-xs font-bold">${esc(item.emoji || "🍽️")} ${esc(item.name)} <span class="text-slate-400 font-normal">(${esc(item.grams)}g)</span></div>
+              ${item.combo ? `<div class="text-[10px] text-slate-500 mt-0.5">↳ ${esc(item.combo.a.name)} ${esc(item.combo.gA)}g · ${fractionLabel(100 - item.combo.pctB)} + ${esc(item.combo.b.name)} ${esc(item.combo.gB)}g · ${fractionLabel(item.combo.pctB)}</div>` : ""}
               <div class="text-[11px] text-slate-400 mt-0.5">${item.cal} kcal • ${item.pro}g P • ${item.carb}g C • ${item.fat}g F</div>
             </div>
             <button onclick="deleteLog('${item._k}')" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1">✕</button>
