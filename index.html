@@ -20,7 +20,7 @@
     .mix-slider:focus { outline: none; }
   </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="min-h-screen pb-24">
 
   <!-- 1. LOCK SCREEN (PASSCODE: 4582) -->
   <div id="lockScreen" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center p-6">
@@ -243,6 +243,39 @@
 
   </div>
 
+  <!-- ===================== GYM TAB ===================== -->
+  <div id="gymView" class="max-w-xl mx-auto p-4 space-y-4 hidden">
+    <div class="card p-4 shadow-lg space-y-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-700">
+          <button id="gymBtnRyan" onclick="switchUser('ryan')" class="px-4 py-1.5 rounded-lg text-sm font-bold">💪 Ryan</button>
+          <button id="gymBtnEric" onclick="switchUser('eric')" class="px-4 py-1.5 rounded-lg text-sm font-bold">⚡ Eric</button>
+        </div>
+        <input type="date" id="gymDatePicker" onchange="gymDate = this.value || todayLocal(); renderGym(true)" class="text-xs px-2.5 py-1.5 rounded-lg" />
+      </div>
+      <div id="gymDayTabs" class="grid grid-cols-4 gap-1.5"></div>
+    </div>
+
+    <div class="card p-4 shadow-lg space-y-3">
+      <div>
+        <h2 id="gymDayTitle" class="font-bold text-base"></h2>
+        <div id="gymDayFocus" class="text-[11px] text-slate-400"></div>
+      </div>
+      <div id="gymList" class="space-y-3"></div>
+    </div>
+  </div>
+
+  <!-- Toast for new maxes -->
+  <div id="toast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-slate-950 font-bold text-sm px-4 py-2.5 rounded-2xl shadow-2xl"></div>
+
+  <!-- Bottom tab bar: Food / Gym -->
+  <nav id="tabBar" class="hidden fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 border-t border-slate-800 backdrop-blur">
+    <div class="max-w-xl mx-auto grid grid-cols-2 gap-2 p-2">
+      <button id="tabFood" onclick="showTab('food')" class="py-2.5 rounded-xl text-sm font-bold">🍽️ Food</button>
+      <button id="tabGym" onclick="showTab('gym')" class="py-2.5 rounded-xl text-sm font-bold">🏋️ Gym Maxes</button>
+    </div>
+  </nav>
+
   <!-- CLOUD STATUS & BACKUP MODAL -->
   <div id="cloudModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4">
     <div class="card p-6 max-w-md w-full space-y-4">
@@ -324,7 +357,8 @@
       },
       customFoods: DEFAULT_FOODS,
       // logs: { "ryan_2026-10-19": { "<entryId>": {...entry} } }  (mirrors Firebase)
-      logs: {}
+      logs: {},
+      gym: {}   // gym: { ryan: { lat_pulldown: { "<id>": {date, w, reps, note} } } }
     };
 
     let selectedFood = null;
@@ -361,6 +395,7 @@
           state = { ...state, ...parsed };
           state.customFoods = mergeWithDefaults(state.customFoods);
           state.logs = state.logs || {};
+          state.gym = state.gym || {};
         } catch (e) {}
       }
       state.currentUser = localStorage.getItem(LOCAL_USER_KEY) || state.currentUser || "ryan";
@@ -487,6 +522,7 @@
       };
       state.customFoods = mergeWithDefaults(cloud.customFoods);
       state.logs = cloud.logs || {};
+      state.gym = cloud.gym || {};
       saveLocalOnly();
     }
 
@@ -525,7 +561,8 @@
       const val = document.getElementById("pinInput").value;
       if (val === PIN_CODE) {
         document.getElementById("lockScreen").classList.add("hidden");
-        document.getElementById("appContainer").classList.remove("hidden");
+        document.getElementById("tabBar").classList.remove("hidden");
+        showTab(currentTab());
         render();
         pullFromCloud();
       } else {
@@ -554,6 +591,7 @@
 
     function switchUser(u) {
       state.currentUser = u;
+      Object.keys(gymDrafts).forEach(k => delete gymDrafts[k]); // prefill with the new person's numbers
       saveLocalOnly();
     }
 
@@ -1012,6 +1050,440 @@
           </div>
         `).join("");
       }
+      renderGym(false);
+    }
+
+    // =========================================================================
+    // GYM MAXES TAB — synced through the same Firebase database (gym/<user>/<lift>/<entry>)
+    // =========================================================================
+    const yt = id => `https://www.youtube.com/watch?v=${id}`;
+    const LIFTS = {
+      lat_pulldown:    { name: "Lat Pulldown",                          sets: "3 sets to failure", video: "sKvj2IDMBUo" },
+      lat_pullover:    { name: "Lat Pullover",                          sets: "3 sets to failure", video: "L07v2VSFIEQ" },
+      seated_row:      { name: "Seated Row",                            sets: "3 sets to failure", video: "3OHnF7PicFA" },
+      preacher_curl:   { name: "Preacher Curls",                        sets: "3 sets to failure" },
+      reverse_curl:    { name: "Reverse Curls",                         sets: "3 sets to failure" },
+      hammer_curl:     { name: "Hammer Curls",                          sets: "3 sets to failure", video: "HTtd5uMFVz8" },
+      db_press:        { name: "Individual DB Press / Incline Smith",   sets: "3 sets to failure", video: "Q36D64UzjVE" },
+      cable_fly:       { name: "High to Low Cable Fly",                 sets: "3 sets to failure", video: "b_ROiGXJ-W4" },
+      pec_deck:        { name: "Pec Deck Fly",                          sets: "3 sets to failure", video: "onDoag5V4yY" },
+      shoulder_press:  { name: "DB Shoulder Press",                     sets: "3 sets to failure", video: "qEwKCR5JCog" },
+      lateral_raise:   { name: "DB / Cable Lateral Raise",              sets: "3 sets to failure" },
+      rear_delt:       { name: "Rear Delt Fly",                         sets: "3 sets to failure", video: "onDoag5V4yY" },
+      tricep_pulldown: { name: "Tricep Pulldown",                       sets: "3 sets to failure", video: "Rc7-euA8FDI" },
+      oh_tricep:       { name: "Overhead Tricep Pullover",              sets: "3 sets to failure", video: "b5le--KkyH0" },
+      hammer_incline:  { name: "Hammer Strength Incline Press",         sets: "3 sets to failure", unit: "lbs / side" },
+      leg_press:       { name: "Leg Press",                             sets: "3 sets to failure", video: "5UkCEpw66yM" },
+      ham_curl:        { name: "Hamstring Curl",                        sets: "3 sets to failure", video: "fK0uZ3KRZRI" },
+      quad_ext:        { name: "Quad Extension",                        sets: "2 sets to failure" },
+      calf_raise:      { name: "Calf Raise Machine",                    sets: "3 sets to failure", video: "QaWIYIA3Ako" }
+    };
+    const GYM_DAYS = [
+      { key: "tue", dow: 2, short: "Tue", title: "Tuesday — Back & Biceps", focus: "All sets 3x to failure",
+        lifts: ["lat_pulldown", "lat_pullover", "seated_row", "preacher_curl", "reverse_curl", "hammer_curl"] },
+      { key: "wed", dow: 3, short: "Wed", title: "Wednesday — Chest, Shoulders & Triceps", focus: "Push day • all sets 3x to failure",
+        lifts: ["db_press", "cable_fly", "pec_deck", "shoulder_press", "lateral_raise", "rear_delt", "tricep_pulldown", "oh_tricep"] },
+      { key: "sat", dow: 6, short: "Sat", title: "Saturday — Legs", focus: "Quads, hamstrings & calves",
+        lifts: ["leg_press", "ham_curl", "quad_ext", "calf_raise"] },
+      { key: "sun", dow: 0, short: "Sun", title: "Sunday — Chest & Back", focus: "All sets 3x to failure",
+        lifts: ["lat_pulldown", "seated_row", "lat_pullover", "pec_deck", "db_press", "hammer_incline"] }
+    ];
+
+    // History from the original Google Doc (read-only; new entries go to the cloud).
+    // user|lift|date|weight|reps|note
+    const GYM_SEED_TEXT = `
+r|lat_pulldown|2026-10-13|115||
+e|lat_pulldown|2026-10-13|85||
+r|seated_row|2026-10-13|120||
+e|seated_row|2026-10-13|90||
+r|reverse_curl|2026-10-13|10||
+e|reverse_curl|2026-10-13|5||
+r|leg_press|2026-10-14|200||
+e|leg_press|2026-10-14|120||shoot higher
+r|ham_curl|2026-10-14|90||
+e|ham_curl|2026-10-14|57.5||
+r|quad_ext|2026-10-14|100||
+e|quad_ext|2026-10-14|100||
+r|calf_raise|2026-10-14|200||
+e|calf_raise|2026-10-14|180||
+r|lat_pulldown|2025-04-16|145|7, 7, 8|dropset
+r|lat_pullover|2025-04-16|40||
+r|seated_row|2025-04-16|130|10, 5|then 110 (8)
+r|preacher_curl|2025-04-16|80||
+r|reverse_curl|2025-04-16|15||
+r|hammer_curl|2025-04-16|25||
+r|lat_pulldown|2025-04-09|145|7|130 (11, 8) first
+r|lat_pullover|2025-04-09|30||
+r|seated_row|2025-04-09|130|10, 5|then 110 (8)
+r|preacher_curl|2025-04-09|70|12, 8, 8|
+r|reverse_curl|2025-04-09|15||
+r|hammer_curl|2025-04-09|25||
+r|lat_pulldown|2025-04-04|130|6|then 115 (7, 6)
+r|seated_row|2025-04-04|110|13, 7, 9|
+r|lat_pullover|2025-04-04|30||
+r|pec_deck|2025-04-04|90|11, 8, 5|
+r|db_press|2025-04-04|45|11, 8, 7|individual dumbbell press
+r|hammer_incline|2025-04-04|50|12, 9, 7|each side
+r|lat_pulldown|2025-04-01|130|13|after sickness
+r|seated_row|2025-04-01|115|14|100 (15) first
+r|lat_pullover|2025-04-01|30||better form
+r|preacher_curl|2025-04-01|60||50 (11) first
+r|lat_pulldown|2025-03-19|130|7, 5, 4|dropset
+r|seated_row|2025-03-19|100|14|80 full extension (11, 16) — stick to 100
+r|lat_pullover|2025-03-19|30||to failure
+r|preacher_curl|2025-03-19|60|7, 6, 6|dropset
+r|hammer_curl|2025-03-19|25|8, 7, 4|dropset
+r|reverse_curl|2025-03-19|15||dropset
+r|lat_pulldown|2025-03-11|110||with Gabe, 12-14 reps
+r|seated_row|2025-03-11|100||with Gabe, 12-14 reps
+r|lat_pulldown|2025-03-04|130||
+r|seated_row|2025-03-04|100||
+r|lat_pulldown|2025-02-25|130||then 115 drop weight
+r|seated_row|2025-02-25|85||back row machine, 2 sets
+r|lat_pullover|2025-02-25|40|8|then 20 to failure
+r|hammer_curl|2025-02-25|25||
+r|reverse_curl|2025-02-25|10||
+r|lat_pulldown|2025-02-19|100|8, 5|drop weight (3)
+r|seated_row|2025-02-19|70|7|back row machine; 55 (10) first
+r|lat_pullover|2025-02-19|40|8|then 20 to failure
+r|hammer_curl|2025-02-19|25||
+r|reverse_curl|2025-02-19|10||
+r|lat_pulldown|2025-02-04|100|8|then 85 (8 > drop)
+r|seated_row|2025-02-04|85|8, 7|back row machine, 2 sets
+r|lat_pullover|2025-02-04|40|7, 3|drop
+r|hammer_curl|2025-02-04|40|5|cable hammer curl; 35 (7) first
+r|leg_press|2025-02-22|280|15, 11, 10|
+r|ham_curl|2025-02-22|90|8, 6, 3|
+r|quad_ext|2025-02-22|100|11|90 (10) first
+r|calf_raise|2025-02-22|160||
+r|leg_press|2025-02-05|265|9, 7, 4|
+r|ham_curl|2025-02-05|80|11, 3|then 70 (4, 5)
+r|quad_ext|2025-02-05|100|6|90 (13) first
+r|calf_raise|2025-02-05|160||
+r|leg_press|2025-02-01|265|7, 4|240 (10) first
+r|ham_curl|2025-02-01|80|5|then 70 (5, 4)
+r|quad_ext|2025-02-01|90|4|80 (10) first
+r|calf_raise|2025-02-01|160||
+r|leg_press|2025-01-22|240|6|220 (11) first
+r|ham_curl|2025-01-22|70|8, 6, 5|
+r|quad_ext|2025-01-22|70|10, 8|
+r|calf_raise|2025-01-22|160|10|140 (12, 15) first
+r|leg_press|2025-01-19|220|8, 7|200 (10) first
+r|ham_curl|2025-01-19|70|5|60 (14), then 60 (5)
+r|quad_ext|2025-01-19|50|10|40 (12) first
+r|calf_raise|2025-01-19|140|8, 6|120 (10) first
+r|leg_press|2025-01-15|190|10|140 (11), 165 (16) first
+r|ham_curl|2025-01-15|50||
+r|quad_ext|2025-01-15|40|8|20 (17) first
+r|calf_raise|2025-01-15|100|10|60 (15), 80 (13) first
+r|leg_press|2025-01-12|165|7, 5|140 (10) first
+r|ham_curl|2025-01-12|80|2|50 (14), 70 (9) first
+r|calf_raise|2025-01-12|80||60 (15) first
+r|leg_press|2024-12-28|90|10, 10, 10|first leg day
+r|ham_curl|2024-12-28|30|9, 6, 5|
+r|quad_ext|2024-12-28|10|9, 7|
+r|calf_raise|2024-12-28|47.5|10, 8, 7|
+r|db_press|2025-05-05|40|7|individual dumbbell press, each
+r|cable_fly|2025-05-05|25|8, 6, 6|dropset
+r|pec_deck|2025-05-05|100|10, 7|>> 60; then 90 >> 50 (10)
+r|shoulder_press|2025-05-05|35|8, 8|>> 15 dropset
+r|lateral_raise|2025-05-05|17.5|30, 25, 10|dropset to 5
+r|rear_delt|2025-05-05|95|7|then 85 (8)
+r|tricep_pulldown|2025-05-05|45|10, 7, 5|
+r|oh_tricep|2025-05-05|25|7|
+r|db_press|2025-04-28|45|4|incline smith; then 35 (7, 7)
+r|cable_fly|2025-04-28|25|8, 6, 6|dropset
+r|pec_deck|2025-04-28|100|10, 7|>> 60; then 90 >> 50 (10)
+r|shoulder_press|2025-04-28|35|8, 8|>> 15 dropset
+r|lateral_raise|2025-04-28|17.5|30, 25, 10|dropset to 5
+r|rear_delt|2025-04-28|95|7|then 85 (8)
+r|tricep_pulldown|2025-04-28|45|10, 7, 5|
+r|oh_tricep|2025-04-28|25|7|
+r|db_press|2025-04-14|45|4|incline smith; then 35 (7, 7)
+r|cable_fly|2025-04-14|25|8, 6, 6|dropset
+r|pec_deck|2025-04-14|100|8, 7|>> 60; then 90 >> 50 (10)
+r|shoulder_press|2025-04-14|40|10, 7|>> 15 to failure
+r|lateral_raise|2025-04-14|15|30, 25, 15|dropset to 5
+r|rear_delt|2025-04-14|95|7|then 85 (8)
+r|tricep_pulldown|2025-04-14|45|10, 7, 5|
+r|oh_tricep|2025-04-14|25|7|
+r|db_press|2025-04-07|45|6|incline smith; then 35 (7, 6)
+r|cable_fly|2025-04-07|25|8, 8|dropset
+r|pec_deck|2025-04-07|95|11, 9, 7|>> 60
+r|shoulder_press|2025-04-07|40|9, 6|>> 15 to failure
+r|lateral_raise|2025-04-07|15|25, 20, 15|dropset to 5
+r|rear_delt|2025-04-07|95|7|then 85 (8)
+r|tricep_pulldown|2025-04-07|42.5|7, 6|>> 27.5; 39 (11) first
+r|oh_tricep|2025-04-07|32.5|7, 6, 5|>> 17.5
+r|db_press|2025-03-18|45|6|incline chest press, each side; then 35 (6)
+r|pec_deck|2025-03-18|120|8, 7, 6|drop weight
+r|tricep_pulldown|2025-03-18|40|7, 3|rope, dropset; 35 >> dropset (6)
+r|oh_tricep|2025-03-18|30|4|then 25 dropset (6)
+r|db_press|2025-03-10|35||with Gabe, 12-14 reps
+r|pec_deck|2025-03-10|60||with Gabe — form over weight
+r|tricep_pulldown|2025-03-10|40||with Gabe
+r|oh_tricep|2025-03-10|25||with Gabe
+r|db_press|2025-02-24|40|1|incline smith; 35 (4) first
+r|cable_fly|2025-02-24|25|8|20 (11) first
+r|pec_deck|2025-02-24|120|9, 6, 5|dropset
+r|shoulder_press|2025-02-24|40|8, 4, 3|
+r|lateral_raise|2025-02-24|15|10, 9|cable, R/L
+r|rear_delt|2025-02-24|100|5|drop; then 90 drop (4)
+r|tricep_pulldown|2025-02-24|50|5|45 (12) first
+r|oh_tricep|2025-02-24|25|6, 5|
+r|db_press|2025-02-10|35|4, 3|incline smith
+r|cable_fly|2025-02-10|25|6|20 (10) first
+r|pec_deck|2025-02-10|120||drop weight; 100 (10) first
+r|shoulder_press|2025-02-10|35|8, 6|
+r|lateral_raise|2025-02-10|15|4, 4|cable; 10 (11, 11) first
+r|rear_delt|2025-02-10|90|9|> drop (5)
+r|tricep_pulldown|2025-02-10|45|6, 4|
+r|oh_tricep|2025-02-10|25|9, 5|
+r|db_press|2025-02-03|35|3|incline smith; 30 (7) first
+r|cable_fly|2025-02-03|25|6, 5|
+r|pec_deck|2025-02-03|100|5|drop; 90 (12) first
+r|shoulder_press|2025-02-03|35|7, 5|
+r|lateral_raise|2025-02-03|15||cable, to failure
+r|rear_delt|2025-02-03|90|8|> drop (3)
+r|tricep_pulldown|2025-02-03|45|8, 6|40 (10) first
+r|oh_tricep|2025-02-03|25|6|20 (11) first
+r|db_press|2025-01-20|25|6, 3, 3|incline smith
+r|cable_fly|2025-01-20|15|7, 6|
+r|pec_deck|2025-01-20|80|8|70 (12) first
+r|shoulder_press|2025-01-20|30|7|25 (10, 7) first
+r|lateral_raise|2025-01-20|10|17, 15|cable, form focus
+r|rear_delt|2025-01-20|90|3|80 (10) first
+r|tricep_pulldown|2025-01-20|40|7, 4|
+r|oh_tricep|2025-01-20|15|7|then 10 (10)
+r|db_press|2025-01-13|20|5|incline smith; then 15 each side (5)
+r|cable_fly|2025-01-13|15|10, 6|
+r|pec_deck|2025-01-13|65|8|60 (10) first
+r|shoulder_press|2025-01-13|25|8|20 (12) first
+r|lateral_raise|2025-01-13|12.5|9, 10|cable
+r|rear_delt|2025-01-13|70|7|60 (9) first
+r|tricep_pulldown|2025-01-13|50|4|40 (10) first
+r|oh_tricep|2025-01-13|15|4|then 10 (8)
+r|db_press|2024-12-23|15|8, 5|incline smith, each side — day 1
+r|cable_fly|2024-12-23|12.5|8, 6|each side
+r|pec_deck|2024-12-23|40|5, 7|
+r|shoulder_press|2024-12-23|20|8, 5|
+r|lateral_raise|2024-12-23|9.5|5, 7|cable
+r|rear_delt|2024-12-23|50|8|40 (9) first
+r|tricep_pulldown|2024-12-23|35|6, 5|check form
+r|oh_tricep|2024-12-23|10|5, 6|`;
+
+    const GYM_SEED = (() => {
+      const out = { ryan: {}, eric: {} };
+      GYM_SEED_TEXT.trim().split("\n").forEach((line, i) => {
+        const [u, lift, date, w, reps, note] = line.split("|");
+        const user = u === "r" ? "ryan" : "eric";
+        (out[user][lift] = out[user][lift] || []).push({ id: "seed" + i, date, w: Number(w), reps: reps || "", note: note || "", seed: true });
+      });
+      return out;
+    })();
+
+    let gymDay = null;
+    let gymDate = todayLocal();
+    const gymDrafts = {};     // what's typed in each lift's boxes (survives live-sync redraws)
+    const gymOpen = {};       // which history lists are expanded
+    let gymNeedsRender = false;
+
+    function defaultGymDay() {
+      const dow = new Date().getDay();
+      const exact = GYM_DAYS.find(d => d.dow === dow);
+      if (exact) return exact.key;
+      // otherwise the next workout day coming up
+      for (let k = 1; k <= 7; k++) {
+        const next = GYM_DAYS.find(d => d.dow === (dow + k) % 7);
+        if (next) return next.key;
+      }
+      return "tue";
+    }
+
+    function gymEntries(user, lift) {
+      const cloud = entriesOf((state.gym && state.gym[user] && state.gym[user][lift]) || {});
+      const all = [...cloud, ...((GYM_SEED[user] && GYM_SEED[user][lift]) || [])];
+      return all.sort((a, b) => (b.date || "").localeCompare(a.date || "") || (Number(b.id) || 0) - (Number(a.id) || 0));
+    }
+    const repsTotal = e => String(e.reps || "").split(/[^0-9.]+/).filter(Boolean).reduce((s, n) => s + Number(n), 0);
+    function gymBest(entries) {
+      return entries.reduce((best, e) => {
+        if (!(e.w > 0)) return best;
+        if (!best || e.w > best.w || (e.w === best.w && repsTotal(e) > repsTotal(best))) return e;
+        return best;
+      }, null);
+    }
+    function prettyDate(d) {
+      if (!d) return "";
+      const [y, m, day] = d.split("-").map(Number);
+      const dt = new Date(y, m - 1, day);
+      const opts = { month: "short", day: "numeric" };
+      if (y !== new Date().getFullYear()) opts.year = "numeric";
+      return dt.toLocaleDateString("en-US", opts);
+    }
+    const unitOf = lift => LIFTS[lift].unit || "lbs";
+
+    function showTab(tab) {
+      try { localStorage.setItem("RYAN_ERIC_TAB", tab); } catch (e) {}
+      document.getElementById("appContainer").classList.toggle("hidden", tab !== "food");
+      document.getElementById("gymView").classList.toggle("hidden", tab !== "gym");
+      const on = "py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white";
+      const off = "py-2.5 rounded-xl text-sm font-bold text-slate-400 bg-slate-900";
+      document.getElementById("tabFood").className = tab === "food" ? on : off;
+      document.getElementById("tabGym").className = tab === "gym" ? on : off;
+      if (tab === "gym") renderGym(true);
+      window.scrollTo(0, 0);
+    }
+    function currentTab() {
+      try { return localStorage.getItem("RYAN_ERIC_TAB") || "food"; } catch (e) { return "food"; }
+    }
+
+    function setGymDay(key) { gymDay = key; renderGym(true); }
+
+    function gymDraft(lift) {
+      const d = gymDrafts[lift];
+      if (d) return d;
+      const last = gymEntries(state.currentUser, lift)[0];
+      return { w: last ? String(last.w) : "", r: ["", "", ""] };
+    }
+    function saveGymDraft(lift) {
+      gymDrafts[lift] = {
+        w: document.getElementById(`gw_${lift}`).value,
+        r: [1, 2, 3].map(n => document.getElementById(`gr_${lift}_${n}`).value)
+      };
+    }
+    function bumpWeight(lift, delta) {
+      const el = document.getElementById(`gw_${lift}`);
+      const v = Math.max(0, (parseFloat(el.value) || 0) + delta);
+      el.value = Math.round(v * 10) / 10;
+      saveGymDraft(lift);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.remove("hidden");
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => t.classList.add("hidden"), 3000);
+    }
+
+    function saveGymSet(lift) {
+      saveGymDraft(lift);
+      const d = gymDrafts[lift];
+      const w = parseFloat(d.w);
+      if (!(w > 0)) {
+        document.getElementById(`gw_${lift}`).focus();
+        return;
+      }
+      const u = state.currentUser;
+      const before = gymBest(gymEntries(u, lift));
+      const entry = { id: newId(), date: gymDate, w, reps: d.r.filter(x => String(x).trim()).join(", "), note: "" };
+      state.gym = state.gym || {};
+      state.gym[u] = state.gym[u] || {};
+      if (!state.gym[u][lift] || Array.isArray(state.gym[u][lift])) state.gym[u][lift] = {};
+      state.gym[u][lift][entry.id] = entry;
+      gymDrafts[lift] = { w: String(w), r: ["", "", ""] };
+      if (document.activeElement) document.activeElement.blur();
+      saveLocalOnly();
+      queueWrite(`gym/${u}/${lift}/${entry.id}`, entry);
+      const after = gymBest(gymEntries(u, lift));
+      const name = state.profiles[u].name;
+      if (!before || after.id === entry.id && (w > before.w || repsTotal(entry) > repsTotal(before))) {
+        showToast(`🎉 New max for ${name}! ${LIFTS[lift].name}: ${w} ${unitOf(lift)}`);
+      } else {
+        showToast(`✅ Saved for ${name}: ${w} ${unitOf(lift)}${entry.reps ? " × " + entry.reps : ""}`);
+      }
+    }
+
+    function deleteGymEntry(lift, key) {
+      const u = state.currentUser;
+      if (!confirm("Delete this entry?")) return;
+      if (state.gym && state.gym[u] && state.gym[u][lift]) delete state.gym[u][lift][key];
+      saveLocalOnly();
+      queueWrite(`gym/${u}/${lift}/${key}`, null, "DELETE");
+    }
+    function toggleGymHistory(lift) { gymOpen[lift] = !gymOpen[lift]; renderGym(true); }
+
+    function renderGym(force) {
+      if (document.getElementById("gymView").classList.contains("hidden")) return;
+      // Don't redraw under someone's thumb while they're typing; redraw after
+      const list = document.getElementById("gymList");
+      if (!force && list.contains(document.activeElement)) { gymNeedsRender = true; return; }
+      gymNeedsRender = false;
+      if (!gymDay) gymDay = defaultGymDay();
+      const u = state.currentUser, other = u === "ryan" ? "eric" : "ryan";
+      const on = "px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white";
+      const off = "px-4 py-1.5 rounded-lg text-sm font-bold text-slate-400";
+      document.getElementById("gymBtnRyan").className = u === "ryan" ? on : off;
+      document.getElementById("gymBtnEric").className = u === "eric" ? on : off;
+      const dp = document.getElementById("gymDatePicker");
+      if (document.activeElement !== dp) dp.value = gymDate;
+
+      const todayKey = GYM_DAYS.find(d => d.dow === new Date().getDay())?.key;
+      document.getElementById("gymDayTabs").innerHTML = GYM_DAYS.map(d => `
+        <button onclick="setGymDay('${d.key}')" class="py-2 rounded-xl text-xs font-bold border ${d.key === gymDay ? "bg-amber-500 text-slate-950 border-amber-400" : "bg-slate-900 text-slate-300 border-slate-700"}">
+          ${d.short}${d.key === todayKey ? " •" : ""}
+        </button>`).join("");
+
+      const day = GYM_DAYS.find(d => d.key === gymDay);
+      document.getElementById("gymDayTitle").textContent = day.title;
+      document.getElementById("gymDayFocus").textContent = `${day.focus} • logging for ${state.profiles[u].name} on ${prettyDate(gymDate)}`;
+
+      list.innerHTML = day.lifts.map(lift => {
+        const L = LIFTS[lift], unit = unitOf(lift);
+        const mine = gymEntries(u, lift), theirs = gymEntries(other, lift);
+        const best = gymBest(mine), last = mine[0], otherBest = gymBest(theirs);
+        const d = gymDraft(lift);
+        const stat = (label, e, cls) => `
+          <div class="${cls} rounded-xl p-2.5">
+            <div class="text-[10px] font-bold opacity-80">${label}</div>
+            ${e ? `<div class="font-bold text-lg leading-tight">${esc(e.w)} <span class="text-[11px] font-semibold opacity-70">${unit}</span></div>
+                   <div class="text-[10px] opacity-70">${e.reps ? esc(e.reps) + " reps • " : ""}${prettyDate(e.date)}</div>`
+                : `<div class="text-xs opacity-60 mt-1">Nothing yet</div>`}
+          </div>`;
+        const hist = gymOpen[lift] ? `
+          <div class="mt-2 space-y-1 max-h-56 overflow-y-auto">
+            ${mine.map(e => `
+              <div class="flex items-center justify-between bg-slate-950 rounded-lg px-2.5 py-1.5 text-[11px]">
+                <div><span class="text-slate-400">${prettyDate(e.date)}</span> • <b>${esc(e.w)} ${unit}</b>${e.reps ? ` × ${esc(e.reps)}` : ""}${e.note ? ` <span class="text-slate-500">— ${esc(e.note)}</span>` : ""}${best && e.id === best.id ? " 🏆" : ""}</div>
+                ${e.seed ? "" : `<button onclick="deleteGymEntry('${lift}','${e._k}')" class="text-slate-500 hover:text-rose-400 px-1.5">✕</button>`}
+              </div>`).join("") || `<div class="text-[11px] text-slate-500">No history yet</div>`}
+          </div>` : "";
+        return `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="font-bold text-sm">${esc(L.name)}</div>
+              <div class="text-[11px] text-slate-400">${L.sets}</div>
+            </div>
+            ${L.video ? `<a href="${yt(L.video)}" target="_blank" rel="noopener" class="shrink-0 text-[11px] font-bold text-sky-400 bg-slate-800 px-2.5 py-1 rounded-lg">▶ Form</a>` : ""}
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-2.5">
+            ${stat("🏆 BEST", best, "bg-amber-500/15 text-amber-200 border border-amber-500/30")}
+            ${stat("🕘 LAST TIME", last, "bg-slate-800 text-slate-200")}
+          </div>
+          <div class="text-[10px] text-slate-500 mt-1.5">${otherBest ? `${state.profiles[other].name}'s best: ${esc(otherBest.w)} ${unit}${otherBest.reps ? " × " + esc(otherBest.reps) : ""}` : `${state.profiles[other].name} hasn't logged this yet`}</div>
+          <div class="flex items-center gap-1.5 mt-3">
+            <button onclick="bumpWeight('${lift}',-5)" class="w-11 h-11 rounded-xl bg-slate-800 font-bold text-lg">−</button>
+            <input id="gw_${lift}" type="number" inputmode="decimal" step="2.5" value="${esc(d.w)}" oninput="saveGymDraft('${lift}')" onblur="gymBlur()" placeholder="Weight"
+              class="flex-1 min-w-0 h-11 text-center text-xl font-bold rounded-xl" />
+            <button onclick="bumpWeight('${lift}',5)" class="w-11 h-11 rounded-xl bg-slate-800 font-bold text-lg">+</button>
+            <span class="text-[11px] text-slate-400 w-10">${unit}</span>
+          </div>
+          <div class="flex items-center gap-1.5 mt-2">
+            <span class="text-[11px] text-slate-400 w-9">Reps</span>
+            ${[1, 2, 3].map(n => `<input id="gr_${lift}_${n}" type="number" inputmode="numeric" value="${esc(d.r[n - 1])}" oninput="saveGymDraft('${lift}')" onblur="gymBlur()" placeholder="Set ${n}"
+              class="w-0 flex-1 h-10 text-center text-sm font-bold rounded-xl" />`).join("")}
+            <button onclick="saveGymSet('${lift}')" class="h-10 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-sm font-bold">Save</button>
+          </div>
+          <button onclick="toggleGymHistory('${lift}')" class="mt-2 text-[11px] text-slate-400 font-semibold">History (${mine.length}) ${gymOpen[lift] ? "▴" : "▾"}</button>
+          ${hist}
+        </div>`;
+      }).join("");
+    }
+    function gymBlur() {
+      // redraw once focus leaves the gym boxes, if a sync came in meanwhile
+      setTimeout(() => { if (gymNeedsRender && !document.getElementById("gymList").contains(document.activeElement)) renderGym(true); }, 50);
     }
 
     // Boot App, start live sync, and refresh when switching back to the tab
