@@ -188,7 +188,7 @@
 
       <!-- Smart Search Bar -->
       <div class="flex gap-2">
-        <input id="searchInput" type="text" oninput="handleSearch()" onkeydown="if(event.key==='Enter')searchOnline()" placeholder="Search vault, food name, or barcode #..."
+        <input id="searchInput" type="text" oninput="handleSearch(true)" onkeydown="if(event.key==='Enter'){this.blur();searchOnline()}" placeholder="Search food, restaurant, or barcode #..."
           class="w-full text-sm px-3.5 py-2.5 rounded-xl" />
         <button onclick="searchOnline()" class="bg-indigo-600 hover:bg-indigo-500 text-xs font-bold px-3.5 rounded-xl shrink-0">
           🌐 Online DB
@@ -202,7 +202,7 @@
       </div>
 
       <!-- Food Kiosk Grid -->
-      <div id="foodGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1"></div>
+      <div id="foodGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-80 overflow-y-auto overflow-x-hidden pr-1"></div>
 
       <!-- Portion Picker Box -->
       <div id="portionBox" class="hidden bg-slate-900 p-4 rounded-xl border border-blue-500/40 space-y-3">
@@ -251,16 +251,27 @@
           <button id="gymBtnRyan" onclick="switchUser('ryan')" class="px-4 py-1.5 rounded-lg text-sm font-bold">💪 Ryan</button>
           <button id="gymBtnEric" onclick="switchUser('eric')" class="px-4 py-1.5 rounded-lg text-sm font-bold">⚡ Eric</button>
         </div>
-        <input type="date" id="gymDatePicker" onchange="gymDate = this.value || todayLocal(); renderGym(true)" class="text-xs px-2.5 py-1.5 rounded-lg" />
+        <input type="date" id="gymDatePicker" onchange="onGymDatePicked(this.value)" class="text-xs px-2.5 py-1.5 rounded-lg" />
       </div>
-      <div id="gymDayTabs" class="grid grid-cols-4 gap-1.5"></div>
+      <!-- This week's calendar: tap a day to see what's on it, or an open day to move a missed workout there -->
+      <div class="flex items-center justify-between">
+        <button onclick="shiftGymWeek(-1)" class="w-8 h-7 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 font-bold">‹</button>
+        <div id="gymWeekLabel" class="text-[11px] font-bold text-slate-300"></div>
+        <button onclick="shiftGymWeek(1)" class="w-8 h-7 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 font-bold">›</button>
+      </div>
+      <div id="gymWeek" class="grid grid-cols-7 gap-1"></div>
+      <div id="gymDayTabs" class="flex gap-1.5 overflow-x-auto pb-1"></div>
     </div>
 
     <div class="card p-4 shadow-lg space-y-3">
-      <div>
-        <h2 id="gymDayTitle" class="font-bold text-base"></h2>
-        <div id="gymDayFocus" class="text-[11px] text-slate-400"></div>
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <h2 id="gymDayTitle" class="font-bold text-base"></h2>
+          <div id="gymDayFocus" class="text-[11px] text-slate-400"></div>
+        </div>
+        <div id="gymDayActions" class="flex gap-1.5 shrink-0"></div>
       </div>
+      <div id="gymPanel"></div>
       <div id="gymList" class="space-y-3"></div>
     </div>
   </div>
@@ -333,8 +344,23 @@
       { id: "f18", emoji: "🥩", name: "Chomps Grass-Fed Beef Stick (1 Stick)", src: "Label", grams: 32, cal: 100, pro: 10, carb: 0, fat: 7 },
       { id: "f19", emoji: "💪", name: "Super Advanced Whey Protein (2 Scoops, 12g BCAA)", src: "Label", grams: 90, cal: 360, pro: 60, carb: 14, fat: 8 },
       { id: "f20", emoji: "🥬", name: "Bok Choy / Baby Bok Choy (Cooked)", src: "USDA", grams: 100, cal: 12, pro: 1.6, carb: 1.8, fat: 0.2 },
-      { id: "f21", emoji: "🐖", name: "Ground Pork (Cooked)", src: "USDA", grams: 100, cal: 297, pro: 25.7, carb: 0, fat: 20.8 }
+      { id: "f21", emoji: "🐖", name: "Ground Pork (Cooked)", src: "USDA", grams: 100, cal: 297, pro: 25.7, carb: 0, fat: 20.8 },
+      // Raising Cane's — official allergen & nutrition sheet (raisingcanes.com/allergens). Combos exclude the drink.
+      { id: "rc1", emoji: "🍗", name: "Raising Cane's Chicken Finger (1 Finger)", src: "Cane's", grams: 55, cal: 130, pro: 12, carb: 5, fat: 6, tags: "tender strip" },
+      { id: "rc2", emoji: "🍟", name: "Raising Cane's Crinkle-Cut Fries", src: "Cane's", grams: 144, cal: 420, pro: 5, carb: 53, fat: 21, tags: "fry" },
+      { id: "rc3", emoji: "🍞", name: "Raising Cane's Texas Toast (1 Slice)", src: "Cane's", grams: 47, cal: 150, pro: 4, carb: 23, fat: 4.5, tags: "bread" },
+      { id: "rc4", emoji: "🥗", name: "Raising Cane's Coleslaw", src: "Cane's", grams: 87, cal: 90, pro: 1, carb: 10, fat: 6, tags: "slaw" },
+      { id: "rc5", emoji: "🥫", name: "Raising Cane's Cane's Sauce (1 Cup)", src: "Cane's", grams: 43, cal: 190, pro: 0, carb: 6, fat: 18, tags: "dip" },
+      { id: "rc6", emoji: "🥪", name: "Raising Cane's Chicken Sandwich", src: "Cane's", grams: 297, cal: 810, pro: 45, carb: 68, fat: 40, tags: "burger" },
+      { id: "rc7", emoji: "🍱", name: "Raising Cane's 3 Finger Combo (Fries, Toast, Sauce)", src: "Cane's", grams: 399, cal: 1050, pro: 46, carb: 84, fat: 58, tags: "three tender" },
+      { id: "rc8", emoji: "🍱", name: "Raising Cane's Box Combo (4 Fingers, Fries, Toast, Slaw, Sauce)", src: "Cane's", grams: 541, cal: 1270, pro: 60, carb: 99, fat: 70, tags: "four tender" },
+      { id: "rc9", emoji: "🍱", name: "Raising Cane's Caniac Combo (6 Fingers, Fries, Toast, Slaw, 2 Sauce)", src: "Cane's", grams: 694, cal: 1810, pro: 87, carb: 126, fat: 106, tags: "six tender" }
     ];
+
+    // Query words that mean the same thing (left side typed → right side searched)
+    const SYNONYMS = { canes: "cane", cane: "cane", chx: "chicken", chikn: "chicken", cfa: "chickfila", jitb: "jackinthebox",
+      innout: "innout", tender: "finger", tenders: "finger", strip: "finger", strips: "finger", nugs: "nugget", pb: "peanut",
+      fries: "fry", ff: "fry", shake: "shake", protien: "protein", whey: "whey", oj: "orange", gb: "groundbeef" };
 
     // Online food databases. Personal USDA FoodData Central key (about 1,000 searches/hour).
     // If it ever stops working, swap back to "DEMO_KEY" or get a new free key at
@@ -358,7 +384,8 @@
       customFoods: DEFAULT_FOODS,
       // logs: { "ryan_2026-10-19": { "<entryId>": {...entry} } }  (mirrors Firebase)
       logs: {},
-      gym: {}   // gym: { ryan: { lat_pulldown: { "<id>": {date, w, reps, note} } } }
+      gym: {},  // gym: { ryan: { lat_pulldown: { "<id>": {date, w, reps, note} } } }
+      gymPlan: {} // shared, editable split: { days, moves, lifts } (see GYM_DAYS)
     };
 
     let selectedFood = null;
@@ -396,6 +423,7 @@
           state.customFoods = mergeWithDefaults(state.customFoods);
           state.logs = state.logs || {};
           state.gym = state.gym || {};
+          state.gymPlan = state.gymPlan || {};
         } catch (e) {}
       }
       state.currentUser = localStorage.getItem(LOCAL_USER_KEY) || state.currentUser || "ryan";
@@ -523,6 +551,7 @@
       state.customFoods = mergeWithDefaults(cloud.customFoods);
       state.logs = cloud.logs || {};
       state.gym = cloud.gym || {};
+      state.gymPlan = cloud.gymPlan || {};
       saveLocalOnly();
     }
 
@@ -618,45 +647,130 @@
       return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
+    // ---------- Food grid (vault + online results share one grid) ----------
     let gridItems = [];
     function renderFoodGrid(items, emptyHtml) {
       gridItems = items;
       const grid = document.getElementById("foodGrid");
       if (!items.length) { grid.innerHTML = emptyHtml || ""; return; }
-      grid.innerHTML = items.map((f, i) => `
+      // FIX: notes/dividers use col-span-full. The old "col-span-3" inside a
+      // 2-column phone grid made the browser invent a 3rd column, which squashed
+      // the cards into skinny slivers after an online search.
+      grid.innerHTML = items.map((f, i) => f.divider
+        ? `<div class="col-span-full text-[11px] font-bold ${f.cls || "text-slate-400"} pt-1">${f.divider}</div>`
+        : `
         <button onclick="selectFoodItem(gridItems[${i}])"
-          class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left transition flex flex-col justify-between">
-          <div>
+          class="min-w-0 bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2.5 rounded-xl text-left transition flex flex-col justify-between">
+          <div class="min-w-0">
             <div class="flex items-center justify-between gap-1 mb-1">
               <span class="text-sm">${esc(f.emoji || "🍽️")}</span>
-              <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold">${esc(f.src || "Vault")}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-semibold truncate">${esc(f.src || "Vault")}</span>
             </div>
-            <div class="text-xs font-bold line-clamp-2">${esc(f.name)}</div>
+            <div class="text-xs font-bold line-clamp-2 break-words">${esc(f.name)}</div>
           </div>
           <div class="text-[10px] text-slate-400 mt-1.5">${Math.round(f.cal)} kcal • ${Math.round(f.pro)}g P (${esc(f.grams)}g)</div>
         </button>
       `).join("");
     }
+    const gridNote = (html, cls = "text-slate-400") =>
+      `<div class="col-span-full text-xs ${cls} py-4 text-center">${html}</div>`;
 
-    const ONLINE_HINT = `<div class="col-span-3 text-xs text-slate-400 py-4 text-center">Not in the vault yet —
-      <button onclick="searchOnline()" class="text-indigo-400 font-bold underline">search USDA & Open Food Facts</button></div>`;
+    // ---------- Smart matching ----------
+    // Handles typos ("raisen canes"), plurals ("eggs" = "egg"), apostrophes
+    // ("canes" = "Cane's"), word starts ("chick" → chicken), nicknames (SYNONYMS),
+    // and ranks foods you log often higher.
+    function stem(w) {
+      if (w.length > 4 && w.endsWith("ies")) return w.slice(0, -3) + "y";
+      if (w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) return w.slice(0, -1);
+      return w;
+    }
+    function wordsOf(s) {
+      return String(s || "").toLowerCase().replace(/['’]/g, "").split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+    }
+    function queryTokens(q) {
+      return wordsOf(q).map(t => SYNONYMS[t] || t);
+    }
+    function editDistance(a, b, max) {
+      if (Math.abs(a.length - b.length) > max) return max + 1;
+      let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+      for (let i = 1; i <= a.length; i++) {
+        const cur = [i];
+        let rowMin = i;
+        for (let j = 1; j <= b.length; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+          rowMin = Math.min(rowMin, cur[j]);
+        }
+        if (rowMin > max) return max + 1;
+        prev = cur;
+      }
+      return prev[b.length];
+    }
+    function tokenScore(t, words, joined) {
+      let best = 0;
+      const allow = t.length >= 7 ? 2 : t.length >= 4 ? 1 : 0;
+      for (const w of words) {
+        if (w === t) return 3;
+        if (w.startsWith(t)) best = Math.max(best, 2.2);
+        else if (allow && (editDistance(t, w, allow) <= allow ||
+                 (w.length > t.length && editDistance(t, w.slice(0, t.length), allow) <= allow))) best = Math.max(best, 1.2);
+      }
+      if (!best && t.length >= 3 && joined.includes(t)) best = 1.5;
+      return best;
+    }
+    // Returns 0 when some typed word doesn't match at all
+    function matchScore(tokens, text) {
+      const words = wordsOf(text), joined = normalizeStr(text);
+      let total = 0;
+      for (const t of tokens) {
+        const s = tokenScore(t, words, joined);
+        if (!s) return 0;
+        total += s;
+      }
+      if (words[0] && tokens[0] && words[0].startsWith(tokens[0])) total += 1; // starts with what you typed
+      return total - words.length * 0.05;  // tie-break: shorter, simpler names first
+    }
 
-    let showingOnlineResults = false;
-    function handleSearch() {
+    function useCounts() {
+      const counts = {};
+      Object.values(state.logs || {}).forEach(day => entriesOf(day).forEach(e => {
+        const names = e.combo ? [e.combo.a.name, e.combo.b.name] : [e.name];
+        names.forEach(n => { counts[n] = (counts[n] || 0) + 1; });
+      }));
+      return counts;
+    }
+
+    function localMatches(raw) {
+      const tokens = queryTokens(raw);
+      if (!tokens.length) return [];
+      const counts = useCounts();
+      return state.customFoods
+        .map(f => {
+          const s = matchScore(tokens, `${f.name} ${f.src || ""} ${f.tags || ""}`);
+          return { f, s: s ? s + Math.min(2, (counts[f.name] || 0) * 0.25) : 0 };
+        })
+        .filter(x => x.s > 0)
+        .sort((a, b) => b.s - a.s)
+        .map(x => x.f);
+    }
+
+    let showingOnlineResults = false, searchSeq = 0, autoTimer = null;
+    function handleSearch(fromTyping) {
       showingOnlineResults = false;
+      searchSeq++;                       // cancels any online search still loading
+      clearTimeout(autoTimer);
       const raw = document.getElementById("searchInput").value.trim();
-      const q = normalizeStr(raw);
-      renderRecents(!q);
-      if (!q) {
+      renderRecents(!raw);
+      if (!raw) {
         renderFoodGrid(state.customFoods);
         return;
       }
-      const tokens = raw.toLowerCase().split(/\s+/).map(normalizeStr).filter(Boolean);
-      const filtered = state.customFoods.filter(f => {
-        const target = normalizeStr(f.name + " " + (f.src || ""));
-        return tokens.every(t => target.includes(t));
-      });
-      renderFoodGrid(filtered, ONLINE_HINT);
+      const found = localMatches(raw);
+      renderFoodGrid(found, gridNote(`Not in the vault yet —
+        <button onclick="searchOnline()" class="text-indigo-400 font-bold underline">search online</button>`));
+      // Few vault matches? Look online automatically once you stop typing
+      if (fromTyping && found.length < 4 && normalizeStr(raw).length >= 3) {
+        autoTimer = setTimeout(() => searchOnline(true), 900);
+      }
     }
 
     // ---------- Online food databases: USDA FoodData Central + Open Food Facts ----------
@@ -665,11 +779,22 @@
     const round1 = n => Math.round((Number(n) || 0) * 10) / 10;
     const titleCase = s => String(s || "").toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
 
+    // fetch() with a time limit, so one slow database can't freeze the search
+    async function fetchJSON(url, ms = 8000) {
+      const ctl = new AbortController();
+      const timer = setTimeout(() => ctl.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: ctl.signal });
+        if (res.status === 429) throw new Error("limit");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } finally { clearTimeout(timer); }
+    }
+
     async function searchUSDA(q) {
-      const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&pageSize=12&dataType=Branded,Foundation,SR%20Legacy&query=${encodeURIComponent(q)}`);
-      if (res.status === 429) throw new Error("USDA hourly limit reached");
-      if (!res.ok) throw new Error("USDA " + res.status);
-      const data = await res.json();
+      // Survey (FNDDS) adds plain everyday foods ("chicken breast, grilled") next to packaged ones
+      const types = encodeURIComponent("Foundation,SR Legacy,Survey (FNDDS),Branded");
+      const data = await fetchJSON(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&pageSize=40&dataType=${types}&query=${encodeURIComponent(q)}`);
       return (data.foods || []).map(f => {
         // USDA search values are per 100 g, so scale to the label serving
         const per100 = id => (f.foodNutrients || []).find(n => n.nutrientId === id)?.value || 0;
@@ -679,9 +804,11 @@
         const grams = hasServing ? Math.round(f.servingSize) : 100;
         const k = grams / 100;
         const serving = f.householdServingFullText ? ` (${titleCase(f.householdServingFullText)})` : "";
+        const brand = f.brandName || (f.dataType === "Branded" ? f.brandOwner : "") || "";
         return {
-          id: "usda_" + f.fdcId, emoji: "🇺🇸", src: "USDA",
-          name: `${f.brandName ? titleCase(f.brandName) + " " : ""}${titleCase(f.description)}${serving}`,
+          id: "usda_" + f.fdcId, emoji: "🇺🇸", src: f.dataType === "Branded" ? "USDA" : "USDA ✓",
+          generic: f.dataType !== "Branded", brand,
+          name: `${brand ? titleCase(brand) + " " : ""}${titleCase(f.description)}${serving}`,
           grams, cal: Math.round(kcal * k), pro: round1(per100(1003) * k),
           carb: round1(per100(1005) * k), fat: round1(per100(1004) * k)
         };
@@ -694,54 +821,97 @@
       const useServing = sq > 0 && n["energy-kcal_serving"] != null;
       const k = useServing ? 1 : (sq > 0 ? sq / 100 : 1);
       const v = key => useServing ? n[key + "_serving"] : (n[key + "_100g"] || 0) * k;
+      const brand = (Array.isArray(p.brands) ? p.brands[0] : String(p.brands || "").split(",")[0]).trim();
       return {
-        id: "off_" + p.code, emoji: "🌐", src: "Open Food Facts",
-        name: `${p.brands ? p.brands.split(",")[0].trim() + " " : ""}${p.product_name || "Unnamed product"}${p.serving_size ? ` (${p.serving_size})` : ""}`,
+        id: "off_" + p.code, emoji: "🌐", src: "Open Food Facts", brand,
+        name: `${brand ? brand + " " : ""}${p.product_name || "Unnamed product"}${p.serving_size ? ` (${p.serving_size})` : ""}`,
         grams: sq > 0 ? Math.round(sq) : 100,
         cal: Math.round(v("energy-kcal")), pro: round1(v("proteins")),
         carb: round1(v("carbohydrates")), fat: round1(v("fat"))
       };
     }
 
+    // WHY OFF KEPT FAILING: Open Food Facts' text-search servers answer
+    // "503 Service Unavailable" (overloaded / rate-limited on their end). Their
+    // error replies also lack CORS headers, so the browser only sees "failed".
+    // Barcode lookups use a different server and still work fine. So now:
+    // barcodes always go to OFF; text search tries OFF's newer search server,
+    // then the old one, each with a short time limit, and if both are down we
+    // skip OFF for 10 minutes instead of waiting on it every search.
+    let offDownUntil = 0;
     async function searchOFF(q) {
       const fields = "code,product_name,brands,serving_size,serving_quantity,nutriments";
       if (/^\d{8,14}$/.test(q)) { // barcode lookup
-        const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${q}.json?fields=${fields}`);
-        const data = await res.json();
+        const data = await fetchJSON(`https://world.openfoodfacts.org/api/v2/product/${q}.json?fields=${fields}`, 8000);
         return data.product ? [fromOFF({ ...data.product, code: q })].filter(x => x.cal > 0) : [];
       }
-      const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=12&fields=${fields}`);
-      const data = await res.json();
-      return (data.products || []).map(fromOFF).filter(x => x.cal > 0);
+      if (Date.now() < offDownUntil) throw new Error("down");
+      try {
+        const data = await fetchJSON(`https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&page_size=15&langs=en&fields=${fields}`, 5000);
+        return (data.hits || []).map(fromOFF).filter(x => x.cal > 0);
+      } catch (e) {
+        try {
+          const data = await fetchJSON(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=15&fields=${fields}`, 5000);
+          return (data.products || []).map(fromOFF).filter(x => x.cal > 0);
+        } catch (e2) {
+          offDownUntil = Date.now() + 10 * 60 * 1000;
+          throw new Error("down");
+        }
+      }
     }
 
-    async function searchOnline() {
+    const COMMON_WORDS = new Set(["breast", "grilled", "cooked", "roasted", "baked", "boneless", "skinless", "lean", "plain", "whole", "thigh", "steamed", "boiled", "scrambled"]);
+    const ODD_WORDS = new Set(["raw", "feet", "skin", "liver", "tail", "back", "neck", "giblet", "meatles", "frankfurter"]);
+    // Rank online results: words you typed > plain/generic foods > brand match > shorter names
+    function rankOnline(q, list) {
+      const tokens = queryTokens(q);
+      const seen = new Set();
+      return list
+        .map(f => {
+          let s = matchScore(tokens, f.name);
+          if (!s) s = 0.1; // keep it, but at the bottom
+          if (f.generic) s += 1.5;
+          // Everyday versions first (grilled breast beats feet/skin/raw)
+          const w = wordsOf(f.name);
+          s += Math.min(1.2, w.filter(x => COMMON_WORDS.has(x)).length * 0.6);
+          if (!w.includes("without") && w.some(x => ODD_WORDS.has(x))) s -= 1;
+          if (f.brand && tokens.some(t => wordsOf(f.brand).includes(t))) s += 2;
+          return { f, s };
+        })
+        .sort((a, b) => b.s - a.s)
+        .map(x => x.f)
+        .filter(f => {
+          const k = normalizeStr(f.name) + "|" + f.cal;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+        .slice(0, 24);
+    }
+
+    async function searchOnline(auto) {
       const q = document.getElementById("searchInput").value.trim();
       if (!q) return;
-      const grid = document.getElementById("foodGrid");
-      grid.innerHTML = `<div class="col-span-3 text-xs text-slate-400 py-4 text-center">🔎 Searching USDA & Open Food Facts...</div>`;
-      const [usda, off] = await Promise.allSettled([searchUSDA(q), searchOFF(q)]);
-      const results = [];
-      const a = usda.status === "fulfilled" ? usda.value : [];
-      const b = off.status === "fulfilled" ? off.value : [];
-      for (let i = 0; i < Math.max(a.length, b.length); i++) { // interleave both sources
-        if (a[i]) results.push(a[i]);
-        if (b[i]) results.push(b[i]);
-      }
-      // Best matches first: results whose name contains every word you typed
-      const tokens = q.toLowerCase().split(/\s+/).map(normalizeStr).filter(Boolean);
-      const score = f => tokens.filter(t => normalizeStr(f.name).includes(t)).length;
-      results.sort((x, y) => score(y) - score(x));
-
-      const failed = [
-        usda.status === "rejected" && (String(usda.reason).includes("limit") ? "USDA (hourly limit — add a free API key)" : "USDA"),
-        off.status === "rejected" && "Open Food Facts"
-      ].filter(Boolean);
-      const note = failed.length ? `<div class="col-span-3 text-[10px] text-amber-400 text-center">⚠️ ${failed.join(" & ")} unavailable right now</div>` : "";
-      showingOnlineResults = results.length > 0;
+      clearTimeout(autoTimer);
+      const my = ++searchSeq;
+      showingOnlineResults = true; // keep live-sync redraws from wiping the results
       renderRecents(false);
-      renderFoodGrid(results, `<div class="col-span-3 text-xs text-slate-400 py-4 text-center">No online results for "${esc(q)}".</div>${note}`);
-      if (results.length && note) document.getElementById("foodGrid").insertAdjacentHTML("afterbegin", note);
+      const local = localMatches(q).slice(0, 6);
+      const head = local.length ? [{ divider: "⭐ In your vault" }, ...local] : [];
+      renderFoodGrid([...head, { divider: "🔎 Searching USDA & Open Food Facts..." }]);
+      const [usda, off] = await Promise.allSettled([searchUSDA(q), searchOFF(q)]);
+      if (my !== searchSeq) return; // you typed something new meanwhile
+      const results = rankOnline(q, [
+        ...(usda.status === "fulfilled" ? usda.value : []),
+        ...(off.status === "fulfilled" ? off.value : [])
+      ]);
+      const failed = [];
+      if (usda.status === "rejected") failed.push(String(usda.reason).includes("limit") ? "USDA hit its hourly limit" : "USDA didn't respond");
+      if (off.status === "rejected" && (!results.length || usda.status === "rejected")) failed.push("Open Food Facts search is down on their end (barcodes still work)");
+      const items = [...head, { divider: "🌐 Online" }, ...results];
+      if (failed.length) items.push({ divider: "ⓘ " + failed.join(" • "), cls: "text-slate-500 font-normal text-center" });
+      if (!results.length) items.splice(items.length - (failed.length ? 1 : 0), 0, { divider: `No online results for "${esc(q)}"`, cls: "text-slate-400 font-normal" });
+      renderFoodGrid(items);
     }
 
     function saveSelectedToVault() {
@@ -1078,14 +1248,17 @@
       quad_ext:        { name: "Quad Extension",                        sets: "2 sets to failure" },
       calf_raise:      { name: "Calf Raise Machine",                    sets: "3 sets to failure", video: "QaWIYIA3Ako" }
     };
+    // Default split. Everything here can be changed in the app (✏️ Edit / 📅 Move);
+    // changes are saved to Firebase under gymPlan/ so both phones share them.
+    // (keys stay "tue"/"wed"/... so old data keeps working even after a workout moves)
     const GYM_DAYS = [
-      { key: "tue", dow: 2, short: "Tue", title: "Tuesday — Back & Biceps", focus: "All sets 3x to failure",
+      { key: "tue", dow: 2, tag: "Back & Bi", title: "Back & Biceps", focus: "All sets 3x to failure",
         lifts: ["lat_pulldown", "lat_pullover", "seated_row", "preacher_curl", "reverse_curl", "hammer_curl"] },
-      { key: "wed", dow: 3, short: "Wed", title: "Wednesday — Chest, Shoulders & Triceps", focus: "Push day • all sets 3x to failure",
+      { key: "wed", dow: 3, tag: "Push", title: "Chest, Shoulders & Triceps", focus: "Push day • all sets 3x to failure",
         lifts: ["db_press", "cable_fly", "pec_deck", "shoulder_press", "lateral_raise", "rear_delt", "tricep_pulldown", "oh_tricep"] },
-      { key: "sat", dow: 6, short: "Sat", title: "Saturday — Legs", focus: "Quads, hamstrings & calves",
+      { key: "sat", dow: 6, tag: "Legs", title: "Legs", focus: "Quads, hamstrings & calves",
         lifts: ["leg_press", "ham_curl", "quad_ext", "calf_raise"] },
-      { key: "sun", dow: 0, short: "Sun", title: "Sunday — Chest & Back", focus: "All sets 3x to failure",
+      { key: "sun", dow: 0, tag: "Chest & Back", title: "Chest & Back", focus: "All sets 3x to failure",
         lifts: ["lat_pulldown", "seated_row", "lat_pullover", "pec_deck", "db_press", "hammer_incline"] }
     ];
 
@@ -1282,23 +1455,60 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
       return out;
     })();
 
-    let gymDay = null;
-    let gymDate = todayLocal();
+    let gymDay = null;            // which workout is open (null = an open/rest day)
+    let gymDate = todayLocal();   // date new sets get logged under
+    let gymSelDate = todayLocal(); // day tapped in the week strip
+    let gymWeek = null;           // Monday of the week being shown
+    let gymPanelMode = null;      // null | "move" | "edit"
+    let gymMoveScope = "week";    // "week" (this week only) | "always"
+    let gymEdit = null;           // draft while editing a workout
     const gymDrafts = {};     // what's typed in each lift's boxes (survives live-sync redraws)
     const gymOpen = {};       // which history lists are expanded
     let gymNeedsRender = false;
 
-    function defaultGymDay() {
-      const dow = new Date().getDay();
-      const exact = GYM_DAYS.find(d => d.dow === dow);
-      if (exact) return exact.key;
-      // otherwise the next workout day coming up
-      for (let k = 1; k <= 7; k++) {
-        const next = GYM_DAYS.find(d => d.dow === (dow + k) % 7);
-        if (next) return next.key;
-      }
-      return "tue";
+    // ---------- Dates ----------
+    const DOW_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const DOW_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon → Sun
+    function ymd(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     }
+    function parseYmd(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+    function addDays(s, n) { const d = parseYmd(s); d.setDate(d.getDate() + n); return ymd(d); }
+    function weekStartOf(s) { const d = parseYmd(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return ymd(d); }
+    function dateInWeek(wk, dow) { return addDays(wk, (dow + 6) % 7); }
+
+    // ---------- The plan (defaults + shared edits from Firebase) ----------
+    // gymPlan: { days: {key: {dow,tag,title,focus,lifts[]}}, moves: {"<monday>": {key: dow}}, lifts: {id: {name,sets}} }
+    const plan = () => (state.gymPlan = state.gymPlan || {});
+    const listOf = x => (Array.isArray(x) ? x : Object.values(x || {})).filter(Boolean);
+    function allLifts() { return { ...LIFTS, ...(plan().lifts || {}) }; }
+    function liftInfo(id) { return allLifts()[id] || { name: id, sets: "" }; }
+    function planDays() {
+      const cloud = plan().days || {};
+      const out = GYM_DAYS.map(d => ({ ...d, ...(cloud[d.key] || {}), key: d.key }));
+      Object.entries(cloud).forEach(([k, v]) => { if (v && !GYM_DAYS.some(d => d.key === k)) out.push({ ...v, key: k }); });
+      return out.filter(d => !d.deleted).map(d => ({ ...d, lifts: listOf(d.lifts), dow: d.dow == null ? -1 : Number(d.dow) }));
+    }
+    function findDay(key) { return planDays().find(d => d.key === key); }
+    // Day of week a workout lands on in a given week (-1 = not this week)
+    function dowInWeek(d, wk) {
+      const m = plan().moves && plan().moves[wk];
+      return m && m[d.key] != null ? Number(m[d.key]) : d.dow;
+    }
+    const isMoved = (d, wk) => !!(plan().moves && plan().moves[wk] && plan().moves[wk][d.key] != null);
+    function workoutsOn(dateStr) {
+      const wk = weekStartOf(dateStr), dow = parseYmd(dateStr).getDay();
+      return planDays().filter(d => dowInWeek(d, wk) === dow);
+    }
+    function setPlan(path, value) {
+      let o = plan();
+      for (let i = 0; i < path.length - 1; i++) o = (o[path[i]] = o[path[i]] && typeof o[path[i]] === "object" ? o[path[i]] : {});
+      if (value === null) delete o[path[path.length - 1]]; else o[path[path.length - 1]] = value;
+      saveLocalOnly();
+      queueWrite("gymPlan/" + path.join("/"), value, value === null ? "DELETE" : "PUT");
+    }
+    const dayRecord = d => ({ dow: d.dow, tag: d.tag || d.title, title: d.title, focus: d.focus || "", lifts: d.lifts });
 
     function gymEntries(user, lift) {
       const cloud = entriesOf((state.gym && state.gym[user] && state.gym[user][lift]) || {});
@@ -1321,7 +1531,7 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
       if (y !== new Date().getFullYear()) opts.year = "numeric";
       return dt.toLocaleDateString("en-US", opts);
     }
-    const unitOf = lift => LIFTS[lift].unit || "lbs";
+    const unitOf = lift => liftInfo(lift).unit || "lbs";
 
     function showTab(tab) {
       try { localStorage.setItem("RYAN_ERIC_TAB", tab); } catch (e) {}
@@ -1338,7 +1548,129 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
       try { return localStorage.getItem("RYAN_ERIC_TAB") || "food"; } catch (e) { return "food"; }
     }
 
-    function setGymDay(key) { gymDay = key; renderGym(true); }
+    // ---------- Navigation ----------
+    function selectGymDate(dateStr) {
+      gymSelDate = dateStr;
+      gymWeek = weekStartOf(dateStr);
+      gymDate = dateStr > todayLocal() ? todayLocal() : dateStr; // never log into the future
+      gymDay = workoutsOn(dateStr)[0]?.key || null;
+      gymPanelMode = null;
+      renderGym(true);
+    }
+    function setGymDay(key) { gymDay = key; gymPanelMode = null; renderGym(true); }
+    function shiftGymWeek(n) {
+      gymWeek = addDays(gymWeek || weekStartOf(todayLocal()), 7 * n);
+      gymPanelMode = null;
+      renderGym(true);
+    }
+    function onGymDatePicked(v) {
+      gymDate = v || todayLocal();
+      gymSelDate = gymDate;
+      gymWeek = weekStartOf(gymDate);
+      gymDay = workoutsOn(gymDate)[0]?.key || gymDay;
+      renderGym(true);
+    }
+    function openGymPanel(mode) {
+      gymPanelMode = gymPanelMode === mode ? null : mode;
+      if (gymPanelMode === "edit") {
+        const d = findDay(gymDay);
+        gymEdit = d ? { key: d.key, isNew: false, dow: d.dow, tag: d.tag || "", title: d.title, focus: d.focus || "", lifts: [...d.lifts] } : null;
+      }
+      renderGym(true);
+    }
+
+    // ---------- Moving a workout ----------
+    function moveWorkout(key, dow) {
+      const d = findDay(key), wk = gymWeek;
+      if (!d) return;
+      if (gymMoveScope === "always") {
+        setPlan(["days", key], dayRecord({ ...d, dow }));
+        if (isMoved(d, wk)) setPlan(["moves", wk, key], null);
+        showToast(dow < 0 ? `${d.title} is now unscheduled` : `${d.title} is now every ${DOW_LONG[dow]}`);
+      } else {
+        if (dow === d.dow) setPlan(["moves", wk, key], null);
+        else setPlan(["moves", wk, key], dow);
+        showToast(dow < 0 ? `Skipping ${d.title} this week` : `${d.title} moved to ${DOW_LONG[dow]} this week`);
+      }
+      gymPanelMode = null;
+      if (dow >= 0) {
+        gymSelDate = dateInWeek(wk, dow);
+        gymDate = gymSelDate > todayLocal() ? todayLocal() : gymSelDate;
+      }
+      gymDay = key;
+      renderGym(true);
+    }
+    function resetMove(key) {
+      setPlan(["moves", gymWeek, key], null);
+      gymPanelMode = null;
+      renderGym(true);
+    }
+    // From an open day: put a workout here
+    function placeWorkoutHere(key, always) {
+      gymMoveScope = always ? "always" : "week";
+      const dow = parseYmd(gymSelDate).getDay();
+      gymWeek = weekStartOf(gymSelDate);
+      moveWorkout(key, dow);
+      gymMoveScope = "week";
+    }
+
+    // ---------- Editing a workout ----------
+    function newWorkout() {
+      gymDay = null;
+      gymPanelMode = "edit";
+      gymEdit = { key: "w_" + newId(), isNew: true, dow: gymSelDate ? parseYmd(gymSelDate).getDay() : -1, tag: "", title: "", focus: "All sets 3x to failure", lifts: [] };
+      renderGym(true);
+      setTimeout(() => document.getElementById("geTitle")?.focus(), 50);
+    }
+    function editField(f, v) { if (gymEdit) gymEdit[f] = f === "dow" ? Number(v) : v; }
+    function editLift(i, action) {
+      const L = gymEdit.lifts;
+      if (action === "up" && i > 0) [L[i - 1], L[i]] = [L[i], L[i - 1]];
+      if (action === "down" && i < L.length - 1) [L[i + 1], L[i]] = [L[i], L[i + 1]];
+      if (action === "remove") L.splice(i, 1);
+      renderGym(true);
+    }
+    function addLiftToEdit(id) {
+      if (!id) return;
+      if (id === "__new") {
+        const name = (prompt("New exercise name (e.g. Incline Bench Press):") || "").trim();
+        if (!name) { renderGym(true); return; }
+        const sets = (prompt("Sets / scheme:", "3 sets to failure") || "3 sets to failure").trim();
+        id = "x_" + newId();
+        setPlan(["lifts", id], { name, sets });
+      }
+      if (!gymEdit.lifts.includes(id)) gymEdit.lifts.push(id);
+      renderGym(true);
+    }
+    function saveWorkoutEdit() {
+      const e = gymEdit;
+      if (!e) return;
+      e.title = e.title.trim() || "Workout";
+      e.tag = e.tag.trim() || e.title;
+      setPlan(["days", e.key], dayRecord(e));
+      gymDay = e.key;
+      gymPanelMode = null;
+      gymEdit = null;
+      showToast(`💾 Saved "${e.title}" for both of you`);
+      renderGym(true);
+    }
+    function deleteWorkout() {
+      const e = gymEdit;
+      if (!e || !confirm(`Delete the "${e.title || "new"}" workout? (Logged lifts and maxes are kept.)`)) return;
+      if (!e.isNew) {
+        if (GYM_DAYS.some(d => d.key === e.key)) setPlan(["days", e.key], { deleted: true });
+        else setPlan(["days", e.key], null);
+      }
+      gymDay = null; gymPanelMode = null; gymEdit = null;
+      renderGym(true);
+    }
+    function resetSplit() {
+      if (!confirm("Put the whole split back to the original Tue / Wed / Sat / Sun plan? (Logged lifts are kept.)")) return;
+      setPlan(["days"], null);
+      setPlan(["moves"], null);
+      gymPanelMode = null; gymEdit = null;
+      selectGymDate(todayLocal());
+    }
 
     function gymDraft(lift) {
       const d = gymDrafts[lift];
@@ -1389,7 +1721,7 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
       const after = gymBest(gymEntries(u, lift));
       const name = state.profiles[u].name;
       if (!before || after.id === entry.id && (w > before.w || repsTotal(entry) > repsTotal(before))) {
-        showToast(`🎉 New max for ${name}! ${LIFTS[lift].name}: ${w} ${unitOf(lift)}`);
+        showToast(`🎉 New max for ${name}! ${liftInfo(lift).name}: ${w} ${unitOf(lift)}`);
       } else {
         showToast(`✅ Saved for ${name}: ${w} ${unitOf(lift)}${entry.reps ? " × " + entry.reps : ""}`);
       }
@@ -1404,13 +1736,131 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
     }
     function toggleGymHistory(lift) { gymOpen[lift] = !gymOpen[lift]; renderGym(true); }
 
+    // ---------- Drawing the gym tab ----------
+    const chipBtn = "text-[11px] font-bold px-2.5 py-1.5 rounded-lg border";
+    function renderWeekStrip(days) {
+      const today = todayLocal();
+      const thisWeek = weekStartOf(today);
+      const end = addDays(gymWeek, 6);
+      document.getElementById("gymWeekLabel").textContent =
+        (gymWeek === thisWeek ? "This week • " : gymWeek === addDays(thisWeek, 7) ? "Next week • " : gymWeek === addDays(thisWeek, -7) ? "Last week • " : "")
+        + `${prettyDate(gymWeek)} – ${prettyDate(end)}`;
+      document.getElementById("gymWeek").innerHTML = WEEK_ORDER.map(dow => {
+        const date = dateInWeek(gymWeek, dow);
+        const here = days.filter(d => dowInWeek(d, gymWeek) === dow);
+        const sel = date === gymSelDate, isToday = date === today, past = date < today;
+        const chips = here.length
+          ? here.map(d => `<div class="truncate text-[9px] font-bold rounded px-0.5 ${isMoved(d, gymWeek) ? "bg-sky-500/25 text-sky-200" : "bg-amber-500/20 text-amber-200"}">${esc(d.tag || d.title)}</div>`).join("")
+          : `<div class="text-[9px] ${past ? "text-slate-600" : "text-emerald-400/80"}">open</div>`;
+        return `<button onclick="selectGymDate('${date}')" class="min-w-0 rounded-xl border px-0.5 py-1.5 text-center space-y-0.5
+            ${sel ? "border-amber-400 bg-slate-800" : isToday ? "border-blue-500 bg-slate-900" : "border-slate-800 bg-slate-900"} ${past && !sel ? "opacity-70" : ""}">
+            <div class="text-[10px] font-bold ${isToday ? "text-blue-300" : "text-slate-400"}">${DOW_SHORT[dow]}</div>
+            <div class="text-sm font-bold leading-none">${parseYmd(date).getDate()}</div>
+            ${chips}
+          </button>`;
+      }).join("");
+      document.getElementById("gymDayTabs").innerHTML = days.map(d => {
+        const dw = dowInWeek(d, gymWeek);
+        return `<button onclick="setGymDay('${d.key}')" class="shrink-0 ${chipBtn} ${d.key === gymDay ? "bg-amber-500 text-slate-950 border-amber-400" : "bg-slate-900 text-slate-300 border-slate-700"}">
+          ${esc(d.tag || d.title)} <span class="opacity-70 font-semibold">${dw >= 0 ? DOW_SHORT[dw] : "—"}${isMoved(d, gymWeek) ? "*" : ""}</span></button>`;
+      }).join("") + `<button onclick="newWorkout()" class="shrink-0 ${chipBtn} bg-slate-900 text-emerald-400 border-slate-700">+ New</button>`;
+    }
+
+    function renderMovePanel(d) {
+      const days = planDays();
+      const current = dowInWeek(d, gymWeek);
+      const scopeBtn = (v, label) => `<button onclick="gymMoveScope='${v}';renderGym(true)" class="flex-1 ${chipBtn} ${gymMoveScope === v ? "bg-blue-600 text-white border-blue-500" : "bg-slate-950 text-slate-300 border-slate-700"}">${label}</button>`;
+      return `<div class="bg-slate-900 border border-sky-500/40 rounded-xl p-3 space-y-2.5">
+        <div class="text-xs font-bold text-sky-300">📅 Move ${esc(d.title)} to…</div>
+        <div class="flex gap-1.5">${scopeBtn("week", "Just this week")}${scopeBtn("always", "Every week")}</div>
+        <div class="grid grid-cols-7 gap-1">
+          ${WEEK_ORDER.map(dow => {
+            const others = days.filter(o => o.key !== d.key && (gymMoveScope === "always" ? o.dow : dowInWeek(o, gymWeek)) === dow);
+            const isCur = (gymMoveScope === "always" ? d.dow : current) === dow;
+            const date = dateInWeek(gymWeek, dow);
+            return `<button onclick="moveWorkout('${d.key}', ${dow})" class="min-w-0 rounded-lg border py-1.5 text-center ${isCur ? "border-amber-400 bg-amber-500/20" : others.length ? "border-slate-700 bg-slate-950" : "border-emerald-600/60 bg-emerald-500/10"}">
+              <div class="text-[10px] font-bold">${DOW_SHORT[dow]}</div>
+              ${gymMoveScope === "week" ? `<div class="text-[10px] text-slate-400">${parseYmd(date).getDate()}</div>` : ""}
+              <div class="text-[8px] truncate px-0.5 ${others.length ? "text-slate-400" : "text-emerald-300"}">${isCur ? "now" : others.length ? esc(others.map(o => o.tag || o.title).join(", ")) : "open"}</div>
+            </button>`;
+          }).join("")}
+        </div>
+        <div class="flex gap-1.5 flex-wrap">
+          ${gymMoveScope === "week" ? `<button onclick="moveWorkout('${d.key}', -1)" class="${chipBtn} bg-slate-950 text-slate-300 border-slate-700">Skip this week</button>` : `<button onclick="moveWorkout('${d.key}', -1)" class="${chipBtn} bg-slate-950 text-slate-300 border-slate-700">No set day</button>`}
+          ${isMoved(d, gymWeek) ? `<button onclick="resetMove('${d.key}')" class="${chipBtn} bg-slate-950 text-sky-300 border-slate-700">↺ Back to ${d.dow >= 0 ? DOW_SHORT[d.dow] : "usual"}</button>` : ""}
+        </div>
+        <div class="text-[10px] text-slate-500">Green = open day. You can double up a day too — it just shows both.</div>
+      </div>`;
+    }
+
+    function renderEditPanel() {
+      const e = gymEdit;
+      const lifts = allLifts();
+      const avail = Object.entries(lifts).filter(([id]) => !e.lifts.includes(id)).sort((a, b) => a[1].name.localeCompare(b[1].name));
+      return `<div class="bg-slate-900 border border-amber-500/40 rounded-xl p-3 space-y-2.5">
+        <div class="text-xs font-bold text-amber-300">${e.isNew ? "➕ New workout" : "✏️ Edit workout"} <span class="text-slate-500 font-normal">(shared with both of you)</span></div>
+        <input id="geTitle" value="${esc(e.title)}" oninput="editField('title', this.value)" placeholder="Name (e.g. Arms & Abs)" class="w-full text-sm font-bold px-2.5 py-2 rounded-lg" />
+        <div class="grid grid-cols-2 gap-2">
+          <input value="${esc(e.tag)}" oninput="editField('tag', this.value)" maxlength="14" placeholder="Short label (Arms)" class="text-xs px-2.5 py-2 rounded-lg" />
+          <select onchange="editField('dow', this.value)" class="text-xs px-2 py-2 rounded-lg">
+            <option value="-1" ${e.dow < 0 ? "selected" : ""}>No set day</option>
+            ${WEEK_ORDER.map(dow => `<option value="${dow}" ${e.dow === dow ? "selected" : ""}>Every ${DOW_LONG[dow]}</option>`).join("")}
+          </select>
+        </div>
+        <input value="${esc(e.focus)}" oninput="editField('focus', this.value)" placeholder="Notes (e.g. all sets 3x to failure)" class="w-full text-xs px-2.5 py-2 rounded-lg" />
+        <div class="space-y-1">
+          ${e.lifts.map((id, i) => `
+            <div class="flex items-center gap-1 bg-slate-950 rounded-lg px-2 py-1.5">
+              <div class="flex-1 min-w-0 text-xs font-semibold truncate">${esc(liftInfo(id).name)}</div>
+              <button onclick="editLift(${i},'up')" class="w-7 h-7 rounded bg-slate-800 text-xs ${i === 0 ? "opacity-30" : ""}">↑</button>
+              <button onclick="editLift(${i},'down')" class="w-7 h-7 rounded bg-slate-800 text-xs ${i === e.lifts.length - 1 ? "opacity-30" : ""}">↓</button>
+              <button onclick="editLift(${i},'remove')" class="w-7 h-7 rounded bg-slate-800 text-xs text-rose-400">✕</button>
+            </div>`).join("") || `<div class="text-[11px] text-slate-500">No exercises yet — add some below.</div>`}
+        </div>
+        <select onchange="addLiftToEdit(this.value)" class="w-full text-xs px-2 py-2 rounded-lg">
+          <option value="">+ Add exercise…</option>
+          ${avail.map(([id, L]) => `<option value="${esc(id)}">${esc(L.name)}</option>`).join("")}
+          <option value="__new">➕ New exercise (type a name)…</option>
+        </select>
+        <div class="flex gap-1.5">
+          <button onclick="saveWorkoutEdit()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-sm font-bold py-2 rounded-xl">Save</button>
+          <button onclick="gymPanelMode=null;gymEdit=null;renderGym(true)" class="px-3 bg-slate-800 text-sm font-bold py-2 rounded-xl">Cancel</button>
+          <button onclick="deleteWorkout()" class="px-3 bg-slate-800 text-rose-400 text-sm font-bold py-2 rounded-xl">🗑</button>
+        </div>
+        ${e.isNew ? "" : `<button onclick="resetSplit()" class="text-[10px] text-slate-500 underline">Reset whole split to original</button>`}
+      </div>`;
+    }
+
+    function renderOpenDay() {
+      const days = planDays();
+      const sel = parseYmd(gymSelDate);
+      document.getElementById("gymDayTitle").textContent = `${DOW_LONG[sel.getDay()]} ${prettyDate(gymSelDate)} — Open day`;
+      document.getElementById("gymDayFocus").textContent = "Missed a workout? Put it here. (Or tap a workout above to just view it.)";
+      document.getElementById("gymDayActions").innerHTML = "";
+      return days.map(d => {
+        const dw = dowInWeek(d, weekStartOf(gymSelDate));
+        return `<div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-bold truncate">${esc(d.title)}</div>
+            <div class="text-[10px] text-slate-400">${dw >= 0 ? "Scheduled " + DOW_LONG[dw] : "Not scheduled this week"} • ${d.lifts.length} exercises</div>
+          </div>
+          <button onclick="placeWorkoutHere('${d.key}', false)" class="shrink-0 bg-sky-600 hover:bg-sky-500 text-xs font-bold px-3 py-2 rounded-lg">Do it ${DOW_SHORT[sel.getDay()]}</button>
+        </div>`;
+      }).join("") + `<div class="text-[10px] text-slate-500 text-center">Moves only this week. Use 📅 Move on a workout to change it for every week.</div>`;
+    }
+
     function renderGym(force) {
       if (document.getElementById("gymView").classList.contains("hidden")) return;
       // Don't redraw under someone's thumb while they're typing; redraw after
-      const list = document.getElementById("gymList");
-      if (!force && list.contains(document.activeElement)) { gymNeedsRender = true; return; }
+      const list = document.getElementById("gymList"), panel = document.getElementById("gymPanel");
+      const typing = el => el.contains(document.activeElement) && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName);
+      if (!force && (typing(list) || typing(panel))) { gymNeedsRender = true; return; }
       gymNeedsRender = false;
-      if (!gymDay) gymDay = defaultGymDay();
+      if (!gymWeek) {
+        gymWeek = weekStartOf(todayLocal());
+        gymSelDate = todayLocal();
+        gymDay = workoutsOn(gymSelDate)[0]?.key || null;
+      }
       const u = state.currentUser, other = u === "ryan" ? "eric" : "ryan";
       const on = "px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-600 text-white";
       const off = "px-4 py-1.5 rounded-lg text-sm font-bold text-slate-400";
@@ -1419,18 +1869,37 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
       const dp = document.getElementById("gymDatePicker");
       if (document.activeElement !== dp) dp.value = gymDate;
 
-      const todayKey = GYM_DAYS.find(d => d.dow === new Date().getDay())?.key;
-      document.getElementById("gymDayTabs").innerHTML = GYM_DAYS.map(d => `
-        <button onclick="setGymDay('${d.key}')" class="py-2 rounded-xl text-xs font-bold border ${d.key === gymDay ? "bg-amber-500 text-slate-950 border-amber-400" : "bg-slate-900 text-slate-300 border-slate-700"}">
-          ${d.short}${d.key === todayKey ? " •" : ""}
-        </button>`).join("");
+      const days = planDays();
+      if (gymDay && !days.some(d => d.key === gymDay)) gymDay = null;
+      renderWeekStrip(days);
 
-      const day = GYM_DAYS.find(d => d.key === gymDay);
-      document.getElementById("gymDayTitle").textContent = day.title;
-      document.getElementById("gymDayFocus").textContent = `${day.focus} • logging for ${state.profiles[u].name} on ${prettyDate(gymDate)}`;
+      // New workout being created (not saved yet)
+      if (gymPanelMode === "edit" && gymEdit && gymEdit.isNew) {
+        document.getElementById("gymDayTitle").textContent = "New workout";
+        document.getElementById("gymDayFocus").textContent = "Pick a name, a day, and the exercises";
+        document.getElementById("gymDayActions").innerHTML = "";
+        panel.innerHTML = renderEditPanel();
+        list.innerHTML = "";
+        return;
+      }
+
+      const day = days.find(d => d.key === gymDay);
+      if (!day) {
+        panel.innerHTML = "";
+        list.innerHTML = renderOpenDay();
+        return;
+      }
+
+      const dw = dowInWeek(day, gymWeek);
+      document.getElementById("gymDayTitle").textContent = `${dw >= 0 ? DOW_LONG[dw] + " — " : ""}${day.title}`;
+      document.getElementById("gymDayFocus").textContent =
+        `${isMoved(day, gymWeek) ? `Moved this week (usually ${day.dow >= 0 ? DOW_SHORT[day.dow] : "unscheduled"}) • ` : ""}${day.focus ? day.focus + " • " : ""}logging for ${state.profiles[u].name} on ${prettyDate(gymDate)}`;
+      const actBtn = (mode, label) => `<button onclick="openGymPanel('${mode}')" class="${chipBtn} ${gymPanelMode === mode ? "bg-amber-500 text-slate-950 border-amber-400" : "bg-slate-900 text-slate-300 border-slate-700"}">${label}</button>`;
+      document.getElementById("gymDayActions").innerHTML = actBtn("move", "📅 Move") + actBtn("edit", "✏️ Edit");
+      panel.innerHTML = gymPanelMode === "move" ? renderMovePanel(day) : gymPanelMode === "edit" && gymEdit ? renderEditPanel() : "";
 
       list.innerHTML = day.lifts.map(lift => {
-        const L = LIFTS[lift], unit = unitOf(lift);
+        const L = liftInfo(lift), unit = unitOf(lift);
         const mine = gymEntries(u, lift), theirs = gymEntries(other, lift);
         const best = gymBest(mine), last = mine[0], otherBest = gymBest(theirs);
         const d = gymDraft(lift);
@@ -1454,7 +1923,7 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
           <div class="flex items-start justify-between gap-2">
             <div>
               <div class="font-bold text-sm">${esc(L.name)}</div>
-              <div class="text-[11px] text-slate-400">${L.sets}</div>
+              <div class="text-[11px] text-slate-400">${esc(L.sets)}</div>
             </div>
             ${L.video ? `<a href="${yt(L.video)}" target="_blank" rel="noopener" class="shrink-0 text-[11px] font-bold text-sky-400 bg-slate-800 px-2.5 py-1 rounded-lg">▶ Form</a>` : ""}
           </div>
@@ -1479,11 +1948,14 @@ r|oh_tricep|2024-12-23|10|5, 6|`;
           <button onclick="toggleGymHistory('${lift}')" class="mt-2 text-[11px] text-slate-400 font-semibold">History (${mine.length}) ${gymOpen[lift] ? "▴" : "▾"}</button>
           ${hist}
         </div>`;
-      }).join("");
+      }).join("") || `<div class="text-xs text-slate-500 text-center py-4">No exercises yet — tap ✏️ Edit to add some.</div>`;
     }
     function gymBlur() {
       // redraw once focus leaves the gym boxes, if a sync came in meanwhile
-      setTimeout(() => { if (gymNeedsRender && !document.getElementById("gymList").contains(document.activeElement)) renderGym(true); }, 50);
+      setTimeout(() => {
+        const busy = ["gymList", "gymPanel"].some(id => document.getElementById(id).contains(document.activeElement));
+        if (gymNeedsRender && !busy) renderGym(true);
+      }, 50);
     }
 
     // Boot App, start live sync, and refresh when switching back to the tab
