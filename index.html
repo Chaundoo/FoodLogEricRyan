@@ -376,11 +376,11 @@
       { id: "f7", emoji: "🥤", name: "Whey Protein Shake (1 Scoop)", src: "Vault", grams: 32, cal: 120, pro: 24.0, carb: 3.0, fat: 1.5 },
       { id: "f8", emoji: "🥣", name: "Rolled Oats (Dry)", src: "USDA", grams: 40, cal: 150, pro: 5.0, carb: 27.0, fat: 2.5 },
       { id: "f9", emoji: "🍌", name: "Medium Banana", src: "USDA", grams: 118, cal: 105, pro: 1.3, carb: 27.0, fat: 0.4 },
-      { id: "f10", emoji: "🍔", name: "In-N-Out Double-Double", src: "Fast Food", grams: 330, cal: 670, pro: 37.0, carb: 39.0, fat: 41.0 },
-      { id: "f11", emoji: "🍔", name: "In-N-Out Double-Double Protein Style", src: "Fast Food", grams: 290, cal: 520, pro: 33.0, carb: 11.0, fat: 39.0 },
+      { id: "f10", emoji: "🍔", name: "In-N-Out Double-Double", src: "In-N-Out", grams: 287, cal: 610, pro: 34, carb: 42, fat: 34, unit: "burger", tags: "innout" },
+      { id: "f11", emoji: "🍔", name: "In-N-Out Double-Double Protein Style", src: "In-N-Out", grams: 289, cal: 460, pro: 30, carb: 12, fat: 32, unit: "burger", tags: "innout lettuce wrap" },
       { id: "f12", emoji: "🌮", name: "Jack in the Box Tacos (2 Tacos)", src: "Fast Food", grams: 168, cal: 340, pro: 12.0, carb: 32.0, fat: 19.0 },
       { id: "f13", emoji: "🌯", name: "Chipotle Chicken Bowl (Rice/Beans/Chx)", src: "Fast Food", grams: 510, cal: 710, pro: 52.0, carb: 68.0, fat: 24.0 },
-      { id: "f14", emoji: "🍗", name: "Chick-fil-A 12ct Grilled Nuggets", src: "Fast Food", grams: 190, cal: 200, pro: 38.0, carb: 2.0, fat: 4.5 },
+      { id: "f14", emoji: "🍗", name: "Chick-fil-A Grilled Nuggets (12 Nuggets)", src: "Chick-fil-A", grams: 142, cal: 200, pro: 38, carb: 2, fat: 4.5, tags: "cfa chickfila" },
       { id: "f15", emoji: "🥡", name: "Panda Express Teriyaki Chicken (1 Entree)", src: "Fast Food", grams: 170, cal: 340, pro: 41.0, carb: 14.0, fat: 13.0 },
       // Package-label values (gram weights where the label lists none are estimates)
       { id: "f16", emoji: "🥟", name: "Bibigo Beef Bulgogi Mandu XL (2 Dumplings)", src: "Label", grams: 70, cal: 160, pro: 6, carb: 16, fat: 8 },
@@ -398,18 +398,233 @@
       { id: "rc6", emoji: "🥪", name: "Raising Cane's Chicken Sandwich", src: "Cane's", grams: 297, cal: 810, pro: 45, carb: 68, fat: 40, tags: "burger" },
       { id: "rc7", emoji: "🍱", name: "Raising Cane's 3 Finger Combo (Fries, Toast, Sauce)", src: "Cane's", grams: 399, cal: 1050, pro: 46, carb: 84, fat: 58, tags: "three tender" },
       { id: "rc8", emoji: "🍱", name: "Raising Cane's Box Combo (4 Fingers, Fries, Toast, Slaw, Sauce)", src: "Cane's", grams: 541, cal: 1270, pro: 60, carb: 99, fat: 70, tags: "four tender" },
-      { id: "rc9", emoji: "🍱", name: "Raising Cane's Caniac Combo (6 Fingers, Fries, Toast, Slaw, 2 Sauce)", src: "Cane's", grams: 694, cal: 1810, pro: 87, carb: 126, fat: 106, tags: "six tender" }
+      { id: "rc9", emoji: "🍱", name: "Raising Cane's Caniac Combo (6 Fingers, Fries, Toast, Slaw, 2 Sauce)", src: "Cane's", grams: 694, cal: 1810, pro: 87, carb: 126, fat: 106, tags: "six tender" },
+      // Chick-fil-A — official chick-fil-a.com/nutrition-allergens (sauce calories official, sauce fat/carbs estimated)
+      { id: "cfa1", emoji: "🍗", name: "Chick-fil-A Nuggets (8 Nuggets)", src: "Chick-fil-A", grams: 113, cal: 250, pro: 27, carb: 11, fat: 11, tags: "cfa chickfila fried" },
+      { id: "cfa2", emoji: "🍗", name: "Chick-fil-A Nuggets (12 Nuggets)", src: "Chick-fil-A", grams: 170, cal: 380, pro: 40, carb: 16, fat: 17, tags: "cfa chickfila fried" },
+      { id: "cfa3", emoji: "🍗", name: "Chick-fil-A Nuggets (30 Nuggets)", src: "Chick-fil-A", grams: 425, cal: 950, pro: 100, carb: 41, fat: 43, tags: "cfa chickfila fried tray" },
+      { id: "cfa4", emoji: "🍗", name: "Chick-fil-A Grilled Nuggets (8 Nuggets)", src: "Chick-fil-A", grams: 95, cal: 130, pro: 25, carb: 1, fat: 3, tags: "cfa chickfila" },
+      { id: "cfa5", emoji: "🍗", name: "Chick-fil-A Grilled Nuggets (30 Nuggets)", src: "Chick-fil-A", grams: 369, cal: 510, pro: 98, carb: 4, fat: 11, tags: "cfa chickfila tray" },
+      { id: "cfa6", emoji: "🍗", name: "Chick-fil-A Chick-n-Strips (3 Strips)", src: "Chick-fil-A", grams: 136, cal: 310, pro: 29, carb: 16, fat: 14, tags: "cfa chickfila tender strip" },
+      { id: "cfa7", emoji: "🍗", name: "Chick-fil-A Chick-n-Strips (4 Strips)", src: "Chick-fil-A", grams: 181, cal: 410, pro: 39, carb: 21, fat: 19, tags: "cfa chickfila tender strip" },
+      { id: "cfa8", emoji: "🥪", name: "Chick-fil-A Chicken Sandwich", src: "Chick-fil-A", grams: 183, cal: 420, pro: 29, carb: 41, fat: 16, unit: "sandwich", tags: "cfa chickfila original burger" },
+      { id: "cfa9", emoji: "🥪", name: "Chick-fil-A Spicy Chicken Sandwich", src: "Chick-fil-A", grams: 188, cal: 450, pro: 28, carb: 44, fat: 18, unit: "sandwich", tags: "cfa chickfila burger" },
+      { id: "cfa10", emoji: "🥪", name: "Chick-fil-A Deluxe Sandwich", src: "Chick-fil-A", grams: 247, cal: 490, pro: 32, carb: 43, fat: 21, unit: "sandwich", tags: "cfa chickfila burger" },
+      { id: "cfa11", emoji: "🥪", name: "Chick-fil-A Spicy Deluxe Sandwich", src: "Chick-fil-A", grams: 259, cal: 540, pro: 34, carb: 46, fat: 24, unit: "sandwich", tags: "cfa chickfila burger" },
+      { id: "cfa12", emoji: "🥪", name: "Chick-fil-A Grilled Chicken Sandwich", src: "Chick-fil-A", grams: 206, cal: 390, pro: 28, carb: 45, fat: 11, unit: "sandwich", tags: "cfa chickfila burger" },
+      { id: "cfa13", emoji: "🥪", name: "Chick-fil-A Grilled Chicken Club Sandwich", src: "Chick-fil-A", grams: 237, cal: 520, pro: 37, carb: 45, fat: 22, unit: "sandwich", tags: "cfa chickfila burger" },
+      { id: "cfa14", emoji: "🧇", name: "Chick-fil-A Chicken & Waffles Sandwich", src: "Chick-fil-A", grams: 210, cal: 690, pro: 32, carb: 66, fat: 34, unit: "sandwich", tags: "cfa chickfila" },
+      { id: "cfa15", emoji: "🧇", name: "Chick-fil-A Chicken & Waffles Sandwich (Spicy)", src: "Chick-fil-A", grams: 215, cal: 710, pro: 31, carb: 70, fat: 35, unit: "sandwich", tags: "cfa chickfila" },
+      { id: "cfa16", emoji: "🧇", name: "Chick-fil-A Chicken & Waffles Sandwich (Grilled)", src: "Chick-fil-A", grams: 179, cal: 540, pro: 29, carb: 55, fat: 24, unit: "sandwich", tags: "cfa chickfila" },
+      { id: "cfa17", emoji: "🌯", name: "Chick-fil-A Cool Wrap", src: "Chick-fil-A", grams: 231, cal: 660, pro: 43, carb: 32, fat: 45, unit: "wrap", tags: "cfa chickfila grilled" },
+      { id: "cfa18", emoji: "🥗", name: "Chick-fil-A Market Salad", src: "Chick-fil-A", grams: 326, cal: 550, pro: 28, carb: 42, fat: 31, unit: "salad", tags: "cfa chickfila" },
+      { id: "cfa19", emoji: "🥗", name: "Chick-fil-A Spicy Southwest Salad", src: "Chick-fil-A", grams: 424, cal: 680, pro: 33, carb: 27, fat: 49, unit: "salad", tags: "cfa chickfila" },
+      { id: "cfa20", emoji: "🥗", name: "Chick-fil-A Cobb Salad", src: "Chick-fil-A", grams: 411, cal: 830, pro: 41, carb: 31, fat: 60, unit: "salad", tags: "cfa chickfila" },
+      { id: "cfa21", emoji: "🥗", name: "Chick-fil-A Side Salad", src: "Chick-fil-A", grams: 166, cal: 470, pro: 6, carb: 14, fat: 42, unit: "salad", tags: "cfa chickfila" },
+      { id: "cfa22", emoji: "🥬", name: "Chick-fil-A Kale Crunch Side", src: "Chick-fil-A", grams: 112, cal: 170, pro: 4, carb: 13, fat: 12, unit: "side", tags: "cfa chickfila" },
+      { id: "cfa23", emoji: "🍟", name: "Chick-fil-A Waffle Fries (Small)", src: "Chick-fil-A", grams: 96, cal: 320, pro: 4, carb: 35, fat: 19, tags: "cfa chickfila fry potato" },
+      { id: "cfa24", emoji: "🍟", name: "Chick-fil-A Waffle Fries (Medium)", src: "Chick-fil-A", grams: 125, cal: 420, pro: 5, carb: 45, fat: 24, tags: "cfa chickfila fry potato" },
+      { id: "cfa25", emoji: "🍟", name: "Chick-fil-A Waffle Fries (Large)", src: "Chick-fil-A", grams: 179, cal: 600, pro: 7, carb: 65, fat: 35, tags: "cfa chickfila fry potato" },
+      { id: "cfa26", emoji: "🧀", name: "Chick-fil-A Mac & Cheese (Medium)", src: "Chick-fil-A", grams: 227, cal: 450, pro: 20, carb: 28, fat: 29, tags: "cfa chickfila macaroni" },
+      { id: "cfa27", emoji: "🍲", name: "Chick-fil-A Chicken Noodle Soup (Cup)", src: "Chick-fil-A", grams: 252, cal: 190, pro: 11, carb: 27, fat: 4.5, tags: "cfa chickfila" },
+      { id: "cfa28", emoji: "🍲", name: "Chick-fil-A Chicken Tortilla Soup", src: "Chick-fil-A", grams: 265, cal: 350, pro: 25, carb: 39, fat: 11, tags: "cfa chickfila" },
+      { id: "cfa29", emoji: "🍓", name: "Chick-fil-A Fruit Cup (Medium)", src: "Chick-fil-A", grams: 125, cal: 70, pro: 1, carb: 16, fat: 0, tags: "cfa chickfila" },
+      { id: "cfa30", emoji: "🍓", name: "Chick-fil-A Fruit Cup (Large)", src: "Chick-fil-A", grams: 215, cal: 120, pro: 1, carb: 28, fat: 0, tags: "cfa chickfila" },
+      { id: "cfa31", emoji: "🥔", name: "Chick-fil-A Waffle Potato Chips", src: "Chick-fil-A", grams: 43, cal: 220, pro: 3, carb: 25, fat: 13, unit: "bag", tags: "cfa chickfila" },
+      { id: "cfa32", emoji: "🍞", name: "Chick-fil-A Mini Yeast Rolls (4 Rolls)", src: "Chick-fil-A", grams: 70, cal: 300, pro: 6, carb: 52, fat: 8, tags: "cfa chickfila bread" },
+      { id: "cfa33", emoji: "🥐", name: "Chick-fil-A Chicken Biscuit", src: "Chick-fil-A", grams: 153, cal: 460, pro: 19, carb: 45, fat: 23, unit: "biscuit", tags: "cfa chickfila breakfast" },
+      { id: "cfa34", emoji: "🥐", name: "Chick-fil-A Spicy Chicken Biscuit", src: "Chick-fil-A", grams: 153, cal: 450, pro: 19, carb: 44, fat: 22, unit: "biscuit", tags: "cfa chickfila breakfast" },
+      { id: "cfa35", emoji: "🥐", name: "Chick-fil-A Chicken, Egg & Cheese Biscuit", src: "Chick-fil-A", grams: 211, cal: 550, pro: 27, carb: 48, fat: 28, unit: "biscuit", tags: "cfa chickfila breakfast" },
+      { id: "cfa36", emoji: "🥐", name: "Chick-fil-A Sausage, Egg & Cheese Biscuit", src: "Chick-fil-A", grams: 192, cal: 620, pro: 22, carb: 38, fat: 42, unit: "biscuit", tags: "cfa chickfila breakfast" },
+      { id: "cfa37", emoji: "🥐", name: "Chick-fil-A Bacon, Egg & Cheese Biscuit", src: "Chick-fil-A", grams: 145, cal: 420, pro: 15, carb: 38, fat: 23, unit: "biscuit", tags: "cfa chickfila breakfast" },
+      { id: "cfa38", emoji: "🥯", name: "Chick-fil-A Chicken, Egg & Cheese Muffin", src: "Chick-fil-A", grams: 187, cal: 410, pro: 27, carb: 36, fat: 18, unit: "muffin", tags: "cfa chickfila breakfast english" },
+      { id: "cfa39", emoji: "🥯", name: "Chick-fil-A Sausage, Egg & Cheese Muffin", src: "Chick-fil-A", grams: 173, cal: 490, pro: 23, carb: 29, fat: 32, unit: "muffin", tags: "cfa chickfila breakfast english" },
+      { id: "cfa40", emoji: "🥯", name: "Chick-fil-A Bacon, Egg & Cheese Muffin", src: "Chick-fil-A", grams: 126, cal: 300, pro: 16, carb: 28, fat: 13, unit: "muffin", tags: "cfa chickfila breakfast english" },
+      { id: "cfa41", emoji: "🥯", name: "Chick-fil-A Egg White Grill", src: "Chick-fil-A", grams: 172, cal: 300, pro: 27, carb: 29, fat: 8, unit: "sandwich", tags: "cfa chickfila breakfast" },
+      { id: "cfa42", emoji: "🍗", name: "Chick-fil-A Chick-n-Minis (4 Minis)", src: "Chick-fil-A", grams: 127, cal: 360, pro: 20, carb: 41, fat: 13, tags: "cfa chickfila breakfast" },
+      { id: "cfa43", emoji: "🍗", name: "Chick-fil-A Chick-n-Minis (10 Minis)", src: "Chick-fil-A", grams: 318, cal: 910, pro: 49, carb: 103, fat: 34, tags: "cfa chickfila breakfast" },
+      { id: "cfa44", emoji: "🌯", name: "Chick-fil-A Hash Brown Scramble Burrito", src: "Chick-fil-A", grams: 304, cal: 700, pro: 34, carb: 51, fat: 40, unit: "burrito", tags: "cfa chickfila breakfast" },
+      { id: "cfa45", emoji: "🥣", name: "Chick-fil-A Hash Brown Scramble Bowl", src: "Chick-fil-A", grams: 233, cal: 470, pro: 29, carb: 19, fat: 30, unit: "bowl", tags: "cfa chickfila breakfast" },
+      { id: "cfa46", emoji: "🥔", name: "Chick-fil-A Hash Browns (Small)", src: "Chick-fil-A", grams: 77, cal: 270, pro: 3, carb: 23, fat: 18, tags: "cfa chickfila breakfast potato" },
+      { id: "cfa47", emoji: "🥔", name: "Chick-fil-A Hash Browns (Large)", src: "Chick-fil-A", grams: 121, cal: 420, pro: 4, carb: 35, fat: 29, tags: "cfa chickfila breakfast potato" },
+      { id: "cfa48", emoji: "🍨", name: "Chick-fil-A Greek Yogurt Berry Parfait", src: "Chick-fil-A", grams: 206, cal: 270, pro: 13, carb: 35, fat: 9, unit: "parfait", tags: "cfa chickfila breakfast" },
+      { id: "cfa49", emoji: "🥤", name: "Chick-fil-A Vanilla Milkshake", src: "Chick-fil-A", grams: 409, cal: 580, pro: 13, carb: 82, fat: 23, unit: "shake", tags: "cfa chickfila" },
+      { id: "cfa50", emoji: "🥤", name: "Chick-fil-A Chocolate Milkshake", src: "Chick-fil-A", grams: 409, cal: 600, pro: 12, carb: 93, fat: 22, unit: "shake", tags: "cfa chickfila" },
+      { id: "cfa51", emoji: "🥤", name: "Chick-fil-A Strawberry Milkshake", src: "Chick-fil-A", grams: 409, cal: 560, pro: 10, carb: 92, fat: 18, unit: "shake", tags: "cfa chickfila" },
+      { id: "cfa52", emoji: "🥤", name: "Chick-fil-A Cookies & Cream Milkshake", src: "Chick-fil-A", grams: 409, cal: 630, pro: 13, carb: 91, fat: 25, unit: "shake", tags: "cfa chickfila" },
+      { id: "cfa53", emoji: "🍋", name: "Chick-fil-A Frosted Lemonade", src: "Chick-fil-A", grams: 383, cal: 350, pro: 7, carb: 67, fat: 7, unit: "cup", tags: "cfa chickfila drink" },
+      { id: "cfa54", emoji: "🍦", name: "Chick-fil-A Icedream Cone", src: "Chick-fil-A", grams: 135, cal: 180, pro: 4, carb: 32, fat: 4, unit: "cone", tags: "cfa chickfila ice cream" },
+      { id: "cfa55", emoji: "🍪", name: "Chick-fil-A Chocolate Chunk Cookie", src: "Chick-fil-A", grams: 78, cal: 370, pro: 5, carb: 49, fat: 17, unit: "cookie", tags: "cfa chickfila" },
+      { id: "cfa56", emoji: "🍫", name: "Chick-fil-A Chocolate Fudge Brownie", src: "Chick-fil-A", grams: 85, cal: 370, pro: 4, carb: 47, fat: 21, unit: "brownie", tags: "cfa chickfila" },
+      { id: "cfa57", emoji: "🥫", name: "Chick-fil-A Sauce", src: "Chick-fil-A", grams: 28, cal: 140, pro: 0, carb: 6, fat: 13, unit: "packet", tags: "cfa chickfila dip sauce" },
+      { id: "cfa58", emoji: "🥫", name: "Chick-fil-A Polynesian Sauce", src: "Chick-fil-A", grams: 28, cal: 110, pro: 0, carb: 13, fat: 6, unit: "packet", tags: "cfa chickfila dip sauce" },
+      { id: "cfa59", emoji: "🥫", name: "Chick-fil-A Garden Herb Ranch Sauce", src: "Chick-fil-A", grams: 28, cal: 100, pro: 0, carb: 2, fat: 10, unit: "packet", tags: "cfa chickfila dip sauce" },
+      { id: "cfa60", emoji: "🥫", name: "Chick-fil-A Honey Mustard Sauce", src: "Chick-fil-A", grams: 28, cal: 50, pro: 0, carb: 12, fat: 0, unit: "packet", tags: "cfa chickfila dip sauce" },
+      { id: "cfa61", emoji: "🥫", name: "Chick-fil-A Barbeque Sauce", src: "Chick-fil-A", grams: 28, cal: 45, pro: 0, carb: 11, fat: 0, unit: "packet", tags: "cfa chickfila dip sauce" },
+      { id: "cfa62", emoji: "🥫", name: "Chick-fil-A Sweet & Spicy Sriracha Sauce", src: "Chick-fil-A", grams: 28, cal: 45, pro: 0, carb: 11, fat: 0, unit: "packet", tags: "cfa chickfila dip sauce" },
+      { id: "cfa63", emoji: "🥫", name: "Chick-fil-A Zesty Buffalo Sauce", src: "Chick-fil-A", grams: 28, cal: 25, pro: 0, carb: 1, fat: 2.5, unit: "packet", tags: "cfa chickfila dip sauce" },
+      // In-N-Out — official in-n-out.com nutrition info (patty & cheese slice worked out from their burger numbers)
+      { id: "ino1", emoji: "🥩", name: "In-N-Out Burger Patty (1 Patty)", src: "In-N-Out", grams: 38, cal: 110, pro: 10, carb: 0, fat: 8, tags: "innout beef meat" },
+      { id: "ino2", emoji: "🧀", name: "In-N-Out American Cheese (1 Slice)", src: "In-N-Out", grams: 20, cal: 70, pro: 4, carb: 2, fat: 5, tags: "innout" },
+      { id: "ino3", emoji: "🍟", name: "In-N-Out French Fries", src: "In-N-Out", grams: 125, cal: 360, pro: 6, carb: 49, fat: 15, unit: "order", tags: "innout fry potato" },
+      { id: "ino4", emoji: "🍔", name: "In-N-Out Hamburger", src: "In-N-Out", grams: 209, cal: 360, pro: 16, carb: 38, fat: 16, unit: "burger", tags: "innout" },
+      { id: "ino5", emoji: "🍔", name: "In-N-Out Hamburger Protein Style", src: "In-N-Out", grams: 211, cal: 210, pro: 12, carb: 9, fat: 14, unit: "burger", tags: "innout lettuce wrap" },
+      { id: "ino6", emoji: "🍔", name: "In-N-Out Cheeseburger", src: "In-N-Out", grams: 229, cal: 430, pro: 20, carb: 40, fat: 21, unit: "burger", tags: "innout" },
+      { id: "ino7", emoji: "🍔", name: "In-N-Out Cheeseburger Protein Style", src: "In-N-Out", grams: 231, cal: 280, pro: 16, carb: 11, fat: 19, unit: "burger", tags: "innout lettuce wrap" },
+      { id: "ino8", emoji: "🥫", name: "In-N-Out Spread (1 Packet)", src: "In-N-Out", grams: 28, cal: 100, pro: 0, carb: 4, fat: 9, tags: "innout sauce" },
+      // Pork ribs — USDA values per 100 g of cooked meat (weigh without the bone)
+      { id: "rib1", emoji: "🍖", name: "Pork Spare Ribs (Cooked, Meat Only)", src: "USDA", grams: 100, cal: 397, pro: 29.1, carb: 0, fat: 30.3, tags: "rib sparerib braised bbq" },
+      { id: "rib2", emoji: "🍖", name: "Pork Baby Back Ribs (Cooked, Meat Only)", src: "USDA", grams: 100, cal: 292, pro: 23.0, carb: 0, fat: 21.5, tags: "rib backrib back rib roasted bbq" },
+      { id: "rib3", emoji: "🍖", name: "Pork Country-Style Ribs (Cooked, Meat Only)", src: "USDA", grams: 100, cal: 273, pro: 26.5, carb: 0, fat: 17.7, tags: "rib country style braised bbq" },
+      // Chili's — official Chili's interactive nutrition menu (no weights published: grams are estimates, log by "order")
+      { id: "chili1", emoji: "🍽️", name: "Chili's Bottomless Chips & Salsa", src: "Chili's", grams: 305, cal: 910, pro: 13, carb: 113, fat: 45, unit: "order", tags: "chilis chip" },
+      { id: "chili2", emoji: "🍽️", name: "Chili's Chicken Bacon Ranch Nachos", src: "Chili's", grams: 905, cal: 2260, pro: 112, carb: 109, fat: 155, unit: "order", tags: "chilis nacho" },
+      { id: "chili3", emoji: "🍽️", name: "Chili's Fresh Guacamole & Chips", src: "Chili's", grams: 385, cal: 1150, pro: 16, carb: 127, fat: 67, unit: "order", tags: "chilis chip guac" },
+      { id: "chili4", emoji: "🍽️", name: "Chili's Fried Mozzarella, 3 Count", src: "Chili's", grams: 370, cal: 920, pro: 48, carb: 59, fat: 55, unit: "order", tags: "chilis mozz stick" },
+      { id: "chili5", emoji: "🍽️", name: "Chili's Fried Mozzarella, 6 Count", src: "Chili's", grams: 715, cal: 1790, pro: 95, carb: 108, fat: 109, unit: "order", tags: "chilis mozz stick" },
+      { id: "chili6", emoji: "🍽️", name: "Chili's Skillet Beef Queso & Chips", src: "Chili's", grams: 445, cal: 1340, pro: 35, carb: 129, fat: 77, unit: "order", tags: "chilis chip cheese dip" },
+      { id: "chili7", emoji: "🍽️", name: "Chili's Southwest Queso & Chips", src: "Chili's", grams: 455, cal: 1360, pro: 33, carb: 125, fat: 83, unit: "order", tags: "chilis chip cheese dip" },
+      { id: "chili8", emoji: "🍽️", name: "Chili's Southwestern Eggrolls", src: "Chili's", grams: 340, cal: 1020, pro: 36, carb: 108, fat: 49, unit: "order", tags: "chilis egg roll" },
+      { id: "chili9", emoji: "🍽️", name: "Chili's Texas Cheese Fries", src: "Chili's", grams: 595, cal: 1790, pro: 72, carb: 101, fat: 123, unit: "order", tags: "chilis fry" },
+      { id: "chili10", emoji: "🍽️", name: "Chili's Texas Cheese Fries - Half Order", src: "Chili's", grams: 435, cal: 1300, pro: 51, carb: 68, fat: 92, unit: "order", tags: "chilis fry" },
+      { id: "chili11", emoji: "🍽️", name: "Chili's Triple Dipper Big Mouth Bites", src: "Chili's", grams: 330, cal: 820, pro: 32, carb: 42, fat: 59, unit: "order", tags: "chilis td slider burger" },
+      { id: "chili12", emoji: "🍽️", name: "Chili's Triple Dipper Boneless Wings - Buffalo", src: "Chili's", grams: 210, cal: 530, pro: 22, carb: 27, fat: 37, unit: "order", tags: "chilis td" },
+      { id: "chili13", emoji: "🍽️", name: "Chili's Triple Dipper Boneless Wings - Honey-Chipotle", src: "Chili's", grams: 260, cal: 650, pro: 22, carb: 62, fat: 36, unit: "order", tags: "chilis td" },
+      { id: "chili14", emoji: "🍽️", name: "Chili's Triple Dipper Boneless Wings - House BBQ", src: "Chili's", grams: 250, cal: 620, pro: 23, carb: 54, fat: 35, unit: "order", tags: "chilis td" },
+      { id: "chili15", emoji: "🍽️", name: "Chili's Triple Dipper Bone-In Wings - Buffalo", src: "Chili's", grams: 195, cal: 490, pro: 37, carb: 3, fat: 37, unit: "order", tags: "chilis td" },
+      { id: "chili16", emoji: "🍽️", name: "Chili's Triple Dipper Bone-In Wings - Honey-Chipotle", src: "Chili's", grams: 230, cal: 580, pro: 37, carb: 30, fat: 36, unit: "order", tags: "chilis td" },
+      { id: "chili17", emoji: "🍽️", name: "Chili's Triple Dipper Bone-In Wings - House BBQ", src: "Chili's", grams: 230, cal: 570, pro: 38, carb: 26, fat: 36, unit: "order", tags: "chilis td" },
+      { id: "chili18", emoji: "🍽️", name: "Chili's Triple Dipper Chicken Crispers (No Sauce)", src: "Chili's", grams: 235, cal: 590, pro: 34, carb: 28, fat: 38, unit: "order", tags: "chilis td tender" },
+      { id: "chili19", emoji: "🍽️", name: "Chili's Triple Dipper Honey-Chipotle Chicken Crispers", src: "Chili's", grams: 380, cal: 950, pro: 35, carb: 79, fat: 56, unit: "order", tags: "chilis td tender" },
+      { id: "chili20", emoji: "🍽️", name: "Chili's Triple Dipper Nashville Hot Chicken Crispers", src: "Chili's", grams: 410, cal: 1020, pro: 37, carb: 40, fat: 80, unit: "order", tags: "chilis td tender" },
+      { id: "chili21", emoji: "🍽️", name: "Chili's Triple Dipper Fried Mozzarella", src: "Chili's", grams: 240, cal: 600, pro: 32, carb: 36, fat: 36, unit: "order", tags: "chilis td mozz stick" },
+      { id: "chili22", emoji: "🍽️", name: "Chili's Triple Dipper Southwestern Eggrolls", src: "Chili's", grams: 190, cal: 570, pro: 19, carb: 55, fat: 31, unit: "order", tags: "chilis td egg roll" },
+      { id: "chili23", emoji: "🍗", name: "Chili's 8 Count Wings - Buffalo", src: "Chili's", grams: 395, cal: 990, pro: 74, carb: 6, fat: 74, unit: "order", tags: "chilis bone in" },
+      { id: "chili24", emoji: "🍗", name: "Chili's 8 Count Wings - Honey Chipotle", src: "Chili's", grams: 470, cal: 1170, pro: 74, carb: 60, fat: 71, unit: "order", tags: "chilis bone in" },
+      { id: "chili25", emoji: "🍗", name: "Chili's 8 Count Wings - House BBQ", src: "Chili's", grams: 455, cal: 1140, pro: 75, carb: 53, fat: 71, unit: "order", tags: "chilis bone in" },
+      { id: "chili26", emoji: "🍗", name: "Chili's 8 Count Wings - Nashville Hot", src: "Chili's", grams: 475, cal: 1190, pro: 76, carb: 13, fat: 93, unit: "order", tags: "chilis bone in" },
+      { id: "chili27", emoji: "🍗", name: "Chili's 12 Count Wings - Buffalo", src: "Chili's", grams: 525, cal: 1310, pro: 110, carb: 7, fat: 94, unit: "order", tags: "chilis bone in" },
+      { id: "chili28", emoji: "🍗", name: "Chili's 12 Count Wings - Honey Chipotle", src: "Chili's", grams: 630, cal: 1580, pro: 110, carb: 88, fat: 89, unit: "order", tags: "chilis bone in" },
+      { id: "chili29", emoji: "🍗", name: "Chili's 12 Count Wings - House BBQ", src: "Chili's", grams: 615, cal: 1540, pro: 111, carb: 77, fat: 89, unit: "order", tags: "chilis bone in" },
+      { id: "chili30", emoji: "🍗", name: "Chili's 12 Count Wings - Nashville Hot", src: "Chili's", grams: 645, cal: 1610, pro: 113, carb: 17, fat: 122, unit: "order", tags: "chilis bone in" },
+      { id: "chili31", emoji: "🍗", name: "Chili's 16 Count Wings - Buffalo", src: "Chili's", grams: 655, cal: 1640, pro: 146, carb: 8, fat: 114, unit: "order", tags: "chilis bone in" },
+      { id: "chili32", emoji: "🍗", name: "Chili's 16 Count Wings - Honey Chipotle", src: "Chili's", grams: 795, cal: 1990, pro: 146, carb: 117, fat: 107, unit: "order", tags: "chilis bone in" },
+      { id: "chili33", emoji: "🍗", name: "Chili's 16 Count Wings - House BBQ", src: "Chili's", grams: 775, cal: 1940, pro: 148, carb: 101, fat: 107, unit: "order", tags: "chilis bone in" },
+      { id: "chili34", emoji: "🍗", name: "Chili's 16 Count Wings - Nashville Hot", src: "Chili's", grams: 815, cal: 2040, pro: 150, carb: 21, fat: 151, unit: "order", tags: "chilis bone in" },
+      { id: "chili35", emoji: "🍗", name: "Chili's 8 Count Boneless Wings - Buffalo", src: "Chili's", grams: 370, cal: 920, pro: 36, carb: 44, fat: 67, unit: "order", tags: "chilis" },
+      { id: "chili36", emoji: "🍗", name: "Chili's 8 Count Boneless Wings - Honey Chipotle", src: "Chili's", grams: 445, cal: 1110, pro: 36, carb: 100, fat: 64, unit: "order", tags: "chilis" },
+      { id: "chili37", emoji: "🍗", name: "Chili's 8 Count Boneless Wings - House BBQ", src: "Chili's", grams: 425, cal: 1060, pro: 37, carb: 88, fat: 64, unit: "order", tags: "chilis" },
+      { id: "chili38", emoji: "🍗", name: "Chili's 8 Count Boneless Wings - Nashville Hot", src: "Chili's", grams: 475, cal: 1190, pro: 39, carb: 53, fat: 92, unit: "order", tags: "chilis" },
+      { id: "chili39", emoji: "🍗", name: "Chili's 12 Count Boneless Wings - Buffalo", src: "Chili's", grams: 485, cal: 1210, pro: 53, carb: 64, fat: 83, unit: "order", tags: "chilis" },
+      { id: "chili40", emoji: "🍗", name: "Chili's 12 Count Boneless Wings - Honey Chipotle", src: "Chili's", grams: 595, cal: 1490, pro: 53, carb: 148, fat: 78, unit: "order", tags: "chilis" },
+      { id: "chili41", emoji: "🍗", name: "Chili's 12 Count Boneless Wings - House BBQ", src: "Chili's", grams: 570, cal: 1420, pro: 54, carb: 129, fat: 78, unit: "order", tags: "chilis" },
+      { id: "chili42", emoji: "🍗", name: "Chili's 12 Count Boneless Wings - Nashville Hot", src: "Chili's", grams: 645, cal: 1610, pro: 57, carb: 78, fat: 120, unit: "order", tags: "chilis" },
+      { id: "chili43", emoji: "🍗", name: "Chili's 16 Count Boneless Wings - Buffalo", src: "Chili's", grams: 600, cal: 1500, pro: 70, carb: 84, fat: 99, unit: "order", tags: "chilis" },
+      { id: "chili44", emoji: "🍗", name: "Chili's 16 Count Boneless Wings - Honey Chipotle", src: "Chili's", grams: 750, cal: 1880, pro: 70, carb: 196, fat: 93, unit: "order", tags: "chilis" },
+      { id: "chili45", emoji: "🍗", name: "Chili's 16 Count Boneless Wings - House BBQ", src: "Chili's", grams: 710, cal: 1780, pro: 71, carb: 171, fat: 92, unit: "order", tags: "chilis" },
+      { id: "chili46", emoji: "🍗", name: "Chili's 16 Count Boneless Wings - Nashville Hot", src: "Chili's", grams: 810, cal: 2030, pro: 75, carb: 102, fat: 148, unit: "order", tags: "chilis" },
+      { id: "chili47", emoji: "🌮", name: "Chili's Fajitas - Grilled Chicken", src: "Chili's", grams: 370, cal: 480, pro: 62, carb: 22, fat: 17, unit: "order", tags: "chilis" },
+      { id: "chili48", emoji: "🌮", name: "Chili's Fajitas - Grilled Steak", src: "Chili's", grams: 440, cal: 570, pro: 57, carb: 24, fat: 29, unit: "order", tags: "chilis" },
+      { id: "chili49", emoji: "🌮", name: "Chili's Fajitas - Shrimp", src: "Chili's", grams: 240, cal: 310, pro: 25, carb: 21, fat: 15, unit: "order", tags: "chilis" },
+      { id: "chili50", emoji: "🌮", name: "Chili's Fajitas - Trio", src: "Chili's", grams: 455, cal: 590, pro: 71, carb: 24, fat: 25, unit: "order", tags: "chilis" },
+      { id: "chili51", emoji: "🌮", name: "Chili's Fajitas - Veggie", src: "Chili's", grams: 260, cal: 340, pro: 17, carb: 45, fat: 14, unit: "order", tags: "chilis" },
+      { id: "chili52", emoji: "🌮", name: "Chili's Fajita Toppings (Cheese, Pico, Sour Cream)", src: "Chili's", grams: 105, cal: 260, pro: 15, carb: 4, fat: 20, unit: "order", tags: "chilis" },
+      { id: "chili53", emoji: "🌮", name: "Chili's Flour Tortillas (4 Tortillas)", src: "Chili's", grams: 155, cal: 390, pro: 8, carb: 57, fat: 14, tags: "chilis" },
+      { id: "chili54", emoji: "🌮", name: "Chili's Corn Tortillas (4 Tortillas)", src: "Chili's", grams: 185, cal: 240, pro: 5, carb: 44, fat: 4, tags: "chilis" },
+      { id: "chili55", emoji: "🍔", name: "Chili's Oldtimer Burger with Cheese", src: "Chili's", grams: 340, cal: 850, pro: 49, carb: 45, fat: 53, unit: "order", tags: "chilis" },
+      { id: "chili56", emoji: "🍔", name: "Chili's Bacon Cheeseburger", src: "Chili's", grams: 450, cal: 1130, pro: 63, carb: 44, fat: 79, unit: "order", tags: "chilis" },
+      { id: "chili57", emoji: "🍔", name: "Chili's Bacon Rancher Burger", src: "Chili's", grams: 685, cal: 1710, pro: 107, carb: 48, fat: 123, unit: "order", tags: "chilis" },
+      { id: "chili58", emoji: "🍔", name: "Chili's Mushroom Swiss Burger", src: "Chili's", grams: 405, cal: 1010, pro: 53, carb: 50, fat: 68, unit: "order", tags: "chilis" },
+      { id: "chili59", emoji: "🍔", name: "Chili's Alex's Santa Fe Burger", src: "Chili's", grams: 370, cal: 930, pro: 49, carb: 48, fat: 62, unit: "order", tags: "chilis" },
+      { id: "chili60", emoji: "🍔", name: "Chili's The Big QP Burger", src: "Chili's", grams: 355, cal: 890, pro: 51, carb: 47, fat: 56, unit: "order", tags: "chilis quarter pounder" },
+      { id: "chili61", emoji: "🍔", name: "Chili's The Big Smasher Burger", src: "Chili's", grams: 380, cal: 950, pro: 47, carb: 49, fat: 64, unit: "order", tags: "chilis smash" },
+      { id: "chili62", emoji: "🍔", name: "Chili's The Double Big Smasher Burger", src: "Chili's", grams: 595, cal: 1490, pro: 86, carb: 50, fat: 106, unit: "order", tags: "chilis smash" },
+      { id: "chili63", emoji: "🍔", name: "Chili's Big Mouth Bites (Burger Entree)", src: "Chili's", grams: 490, cal: 1220, pro: 57, carb: 78, fat: 76, unit: "order", tags: "chilis slider" },
+      { id: "chili64", emoji: "🍔", name: "Chili's Veggie Santa Fe Burger", src: "Chili's", grams: 255, cal: 640, pro: 28, carb: 74, fat: 31, unit: "order", tags: "chilis black bean" },
+      { id: "chili65", emoji: "🥪", name: "Chili's Big Crispy Chicken Sandwich", src: "Chili's", grams: 350, cal: 880, pro: 43, carb: 61, fat: 52, unit: "order", tags: "chilis" },
+      { id: "chili66", emoji: "🥪", name: "Chili's Spicy Big Crispy Chicken Sandwich", src: "Chili's", grams: 350, cal: 870, pro: 43, carb: 61, fat: 52, unit: "order", tags: "chilis" },
+      { id: "chili67", emoji: "🥪", name: "Chili's Deluxe Big Crispy Chicken Sandwich", src: "Chili's", grams: 420, cal: 1050, pro: 56, carb: 63, fat: 64, unit: "order", tags: "chilis" },
+      { id: "chili68", emoji: "🥪", name: "Chili's Buffalo Big Crispy Chicken Sandwich", src: "Chili's", grams: 285, cal: 710, pro: 43, carb: 62, fat: 33, unit: "order", tags: "chilis" },
+      { id: "chili69", emoji: "🥪", name: "Chili's Honey-Chipotle Big Crispy Chicken Sandwich", src: "Chili's", grams: 335, cal: 840, pro: 43, carb: 104, fat: 29, unit: "order", tags: "chilis" },
+      { id: "chili70", emoji: "🥪", name: "Chili's Nashville Hot Big Crispy Chicken Sandwich", src: "Chili's", grams: 380, cal: 950, pro: 45, carb: 70, fat: 54, unit: "order", tags: "chilis" },
+      { id: "chili71", emoji: "🥪", name: "Chili's Grilled Chicken Sandwich", src: "Chili's", grams: 295, cal: 740, pro: 51, carb: 54, fat: 36, unit: "order", tags: "chilis" },
+      { id: "chili72", emoji: "🥪", name: "Chili's Deluxe Grilled Chicken Sandwich", src: "Chili's", grams: 320, cal: 800, pro: 50, carb: 46, fat: 47, unit: "order", tags: "chilis" },
+      { id: "chili73", emoji: "🍗", name: "Chili's Crispers, 3 Count (3 for Me, With Sauce)", src: "Chili's", grams: 405, cal: 1010, pro: 40, carb: 89, fat: 55, unit: "order", tags: "chilis tender strip" },
+      { id: "chili74", emoji: "🍗", name: "Chili's Crispers, 4 Count", src: "Chili's", grams: 315, cal: 790, pro: 45, carb: 38, fat: 51, unit: "order", tags: "chilis tender strip" },
+      { id: "chili75", emoji: "🍗", name: "Chili's Crispers, 5 Count", src: "Chili's", grams: 395, cal: 990, pro: 57, carb: 47, fat: 64, unit: "order", tags: "chilis tender strip" },
+      { id: "chili76", emoji: "🍗", name: "Chili's Crispers, 6 Count", src: "Chili's", grams: 475, cal: 1190, pro: 68, carb: 57, fat: 76, unit: "order", tags: "chilis tender strip" },
+      { id: "chili77", emoji: "🍗", name: "Chili's Honey Chipotle Crispers, 4 Count", src: "Chili's", grams: 415, cal: 1040, pro: 45, carb: 103, fat: 51, unit: "order", tags: "chilis tender strip" },
+      { id: "chili78", emoji: "🍗", name: "Chili's Honey Chipotle Crispers, 5 Count", src: "Chili's", grams: 520, cal: 1300, pro: 57, carb: 129, fat: 64, unit: "order", tags: "chilis tender strip" },
+      { id: "chili79", emoji: "🍗", name: "Chili's Honey Chipotle Crispers, 6 Count", src: "Chili's", grams: 625, cal: 1560, pro: 68, carb: 154, fat: 77, unit: "order", tags: "chilis tender strip" },
+      { id: "chili80", emoji: "🍗", name: "Chili's Nashville Hot Crispers, 4 Count", src: "Chili's", grams: 455, cal: 1140, pro: 48, carb: 51, fat: 83, unit: "order", tags: "chilis tender strip" },
+      { id: "chili81", emoji: "🍗", name: "Chili's Nashville Hot Crispers, 5 Count", src: "Chili's", grams: 570, cal: 1420, pro: 60, carb: 63, fat: 104, unit: "order", tags: "chilis tender strip" },
+      { id: "chili82", emoji: "🍗", name: "Chili's Nashville Hot Crispers, 6 Count", src: "Chili's", grams: 685, cal: 1710, pro: 72, carb: 76, fat: 125, unit: "order", tags: "chilis tender strip" },
+      { id: "chili83", emoji: "🍖", name: "Chili's Baby Back Ribs - Half Rack (House BBQ)", src: "Chili's", grams: 450, cal: 1130, pro: 68, carb: 54, fat: 73, unit: "order", tags: "chilis rib" },
+      { id: "chili84", emoji: "🍖", name: "Chili's Baby Back Ribs - Full Rack (House BBQ)", src: "Chili's", grams: 865, cal: 2160, pro: 136, carb: 81, fat: 145, unit: "order", tags: "chilis rib" },
+      { id: "chili85", emoji: "🍖", name: "Chili's Monterey Chicken", src: "Chili's", grams: 350, cal: 880, pro: 62, carb: 55, fat: 47, unit: "order", tags: "chilis" },
+      { id: "chili86", emoji: "🍖", name: "Chili's Jalapeno-Cheddar Smoked Sausage", src: "Chili's", grams: 150, cal: 380, pro: 21, carb: 4, fat: 31, unit: "order", tags: "chilis" },
+      { id: "chili87", emoji: "🥩", name: "Chili's Classic Ribeye", src: "Chili's", grams: 270, cal: 620, pro: 67, carb: 0, fat: 39, unit: "order", tags: "chilis steak" },
+      { id: "chili88", emoji: "🥩", name: "Chili's Classic Sirloin, 6 oz", src: "Chili's", grams: 110, cal: 250, pro: 34, carb: 1, fat: 12, unit: "order", tags: "chilis steak" },
+      { id: "chili89", emoji: "🥩", name: "Chili's Classic Sirloin, 10 oz", src: "Chili's", grams: 170, cal: 390, pro: 54, carb: 2, fat: 18, unit: "order", tags: "chilis steak" },
+      { id: "chili90", emoji: "🥩", name: "Chili's Surf & Turf Ribeye", src: "Chili's", grams: 300, cal: 690, pro: 78, carb: 1, fat: 41, unit: "order", tags: "chilis steak shrimp" },
+      { id: "chili91", emoji: "🥩", name: "Chili's Surf & Turf Sirloin, 10 oz", src: "Chili's", grams: 195, cal: 450, pro: 66, carb: 3, fat: 20, unit: "order", tags: "chilis steak shrimp" },
+      { id: "chili92", emoji: "🍝", name: "Chili's Cajun Pasta with Grilled Chicken", src: "Chili's", grams: 465, cal: 1160, pro: 64, carb: 109, fat: 51, unit: "order", tags: "chilis" },
+      { id: "chili93", emoji: "🍝", name: "Chili's Cajun Pasta with Shrimp", src: "Chili's", grams: 430, cal: 1070, pro: 46, carb: 108, fat: 50, unit: "order", tags: "chilis" },
+      { id: "chili94", emoji: "🍝", name: "Chili's Ultimate Cajun Pasta", src: "Chili's", grams: 490, cal: 1230, pro: 76, carb: 110, fat: 53, unit: "order", tags: "chilis" },
+      { id: "chili95", emoji: "🍝", name: "Chili's Smoked Cajun Pasta", src: "Chili's", grams: 615, cal: 1540, pro: 86, carb: 113, fat: 83, unit: "order", tags: "chilis" },
+      { id: "chili96", emoji: "🍝", name: "Chili's Veggie Pasta", src: "Chili's", grams: 405, cal: 1010, pro: 35, carb: 107, fat: 48, unit: "order", tags: "chilis" },
+      { id: "chili97", emoji: "🥗", name: "Chili's Ancho Salmon", src: "Chili's", grams: 235, cal: 590, pro: 48, carb: 41, fat: 31, unit: "order", tags: "chilis fish" },
+      { id: "chili98", emoji: "🥗", name: "Chili's Guiltless 6 oz Sirloin", src: "Chili's", grams: 130, cal: 300, pro: 38, carb: 9, fat: 13, unit: "order", tags: "chilis steak" },
+      { id: "chili99", emoji: "🥗", name: "Chili's Guiltless 10 oz Sirloin", src: "Chili's", grams: 195, cal: 450, pro: 59, carb: 10, fat: 20, unit: "order", tags: "chilis steak" },
+      { id: "chili100", emoji: "🥗", name: "Chili's Margarita Grilled Chicken", src: "Chili's", grams: 255, cal: 640, pro: 69, carb: 61, fat: 14, unit: "order", tags: "chilis" },
+      { id: "chili101", emoji: "🥗", name: "Chili's Guiltless Grilled Chicken Platter", src: "Chili's", grams: 140, cal: 350, pro: 35, carb: 37, fat: 8, unit: "order", tags: "chilis" },
+      { id: "chili102", emoji: "🧀", name: "Chili's Quesadilla - Chicken Bacon Ranch", src: "Chili's", grams: 680, cal: 1700, pro: 70, carb: 71, fat: 127, unit: "order", tags: "chilis" },
+      { id: "chili103", emoji: "🧀", name: "Chili's Quesadilla - Brisket", src: "Chili's", grams: 650, cal: 1620, pro: 53, carb: 86, fat: 120, unit: "order", tags: "chilis" },
+      { id: "chili104", emoji: "🧀", name: "Chili's Quesadilla - Veggie", src: "Chili's", grams: 555, cal: 1390, pro: 40, carb: 79, fat: 101, unit: "order", tags: "chilis" },
+      { id: "chili105", emoji: "🥗", name: "Chili's Chipotle Chicken Fresh Mex Bowl", src: "Chili's", grams: 350, cal: 880, pro: 46, carb: 80, fat: 42, unit: "order", tags: "chilis" },
+      { id: "chili106", emoji: "🥗", name: "Chili's Quesadilla Explosion Salad with Crispers", src: "Chili's", grams: 1090, cal: 1420, pro: 51, carb: 82, fat: 100, unit: "order", tags: "chilis" },
+      { id: "chili107", emoji: "🥗", name: "Chili's Quesadilla Explosion Salad with Grilled Chicken", src: "Chili's", grams: 910, cal: 1180, pro: 58, carb: 65, fat: 77, unit: "order", tags: "chilis" },
+      { id: "chili108", emoji: "🥗", name: "Chili's Santa Fe Chicken Salad with Crispers", src: "Chili's", grams: 600, cal: 780, pro: 28, carb: 42, fat: 58, unit: "order", tags: "chilis" },
+      { id: "chili109", emoji: "🥗", name: "Chili's Santa Fe Chicken Salad with Grilled Chicken", src: "Chili's", grams: 415, cal: 540, pro: 35, carb: 24, fat: 35, unit: "order", tags: "chilis" },
+      { id: "chili110", emoji: "🥗", name: "Chili's House Side Salad (No Dressing)", src: "Chili's", grams: 100, cal: 130, pro: 5, carb: 12, fat: 7, unit: "order", tags: "chilis" },
+      { id: "chili111", emoji: "🥗", name: "Chili's House Large Salad (No Dressing)", src: "Chili's", grams: 210, cal: 270, pro: 11, carb: 25, fat: 14, unit: "order", tags: "chilis" },
+      { id: "chili112", emoji: "🥗", name: "Chili's Chicken Enchilada Soup (Cup)", src: "Chili's", grams: 155, cal: 200, pro: 10, carb: 11, fat: 12, unit: "order", tags: "chilis" },
+      { id: "chili113", emoji: "🥗", name: "Chili's Chicken Enchilada Soup (Bowl)", src: "Chili's", grams: 300, cal: 390, pro: 19, carb: 23, fat: 24, unit: "order", tags: "chilis" },
+      { id: "chili114", emoji: "🥗", name: "Chili's Loaded Baked Potato Soup (Cup)", src: "Chili's", grams: 170, cal: 220, pro: 8, carb: 12, fat: 15, unit: "order", tags: "chilis" },
+      { id: "chili115", emoji: "🥗", name: "Chili's Loaded Baked Potato Soup (Bowl)", src: "Chili's", grams: 330, cal: 430, pro: 16, carb: 25, fat: 30, unit: "order", tags: "chilis" },
+      { id: "chili116", emoji: "🍟", name: "Chili's Homestyle Fries", src: "Chili's", grams: 140, cal: 420, pro: 6, carb: 60, fat: 17, unit: "order", tags: "chilis fry" },
+      { id: "chili117", emoji: "🍟", name: "Chili's Mashed Potatoes", src: "Chili's", grams: 175, cal: 230, pro: 4, carb: 25, fat: 13, unit: "order", tags: "chilis" },
+      { id: "chili118", emoji: "🍟", name: "Chili's Loaded Mashed Potatoes", src: "Chili's", grams: 245, cal: 320, pro: 9, carb: 25, fat: 21, unit: "order", tags: "chilis" },
+      { id: "chili119", emoji: "🍟", name: "Chili's Loaded Mac & Cheese", src: "Chili's", grams: 140, cal: 350, pro: 18, carb: 19, fat: 23, unit: "order", tags: "chilis macaroni" },
+      { id: "chili120", emoji: "🍟", name: "Chili's White Cheddar Mac & Cheese", src: "Chili's", grams: 105, cal: 260, pro: 12, carb: 19, fat: 15, unit: "order", tags: "chilis macaroni" },
+      { id: "chili121", emoji: "🍟", name: "Chili's Bowl of Loaded Street Corn", src: "Chili's", grams: 270, cal: 350, pro: 6, carb: 24, fat: 26, unit: "order", tags: "chilis" },
+      { id: "chili122", emoji: "🍟", name: "Chili's Mexican Rice", src: "Chili's", grams: 125, cal: 160, pro: 3, carb: 27, fat: 4.5, unit: "order", tags: "chilis" },
+      { id: "chili123", emoji: "🍟", name: "Chili's Black Beans", src: "Chili's", grams: 85, cal: 110, pro: 6, carb: 20, fat: 0.5, unit: "order", tags: "chilis" },
+      { id: "chili124", emoji: "🍟", name: "Chili's Steamed Broccoli", src: "Chili's", grams: 30, cal: 40, pro: 3, carb: 8, fat: 0, unit: "order", tags: "chilis" },
+      { id: "chili125", emoji: "🍟", name: "Chili's Asparagus", src: "Chili's", grams: 25, cal: 35, pro: 3, carb: 5, fat: 1, unit: "order", tags: "chilis" },
+      { id: "chili126", emoji: "🍟", name: "Chili's Garlic Butter Mushrooms", src: "Chili's", grams: 40, cal: 100, pro: 5, carb: 5, fat: 7, unit: "order", tags: "chilis" },
+      { id: "chili127", emoji: "🥫", name: "Chili's Applewood Smoked Bacon (Add-On)", src: "Chili's", grams: 30, cal: 80, pro: 7, carb: 0, fat: 6, unit: "order", tags: "chilis" },
+      { id: "chili128", emoji: "🥫", name: "Chili's Seared Shrimp (Add-On, Full Order)", src: "Chili's", grams: 25, cal: 60, pro: 11, carb: 1, fat: 2, unit: "order", tags: "chilis" },
+      { id: "chili129", emoji: "🥫", name: "Chili's Ancho Salmon (Add-On)", src: "Chili's", grams: 130, cal: 330, pro: 41, carb: 4, fat: 21, unit: "order", tags: "chilis fish" },
+      { id: "chili130", emoji: "🥫", name: "Chili's Classic Beef Patty (Add-On)", src: "Chili's", grams: 190, cal: 470, pro: 36, carb: 0, fat: 37, unit: "order", tags: "chilis burger" },
+      { id: "chili131", emoji: "🥫", name: "Chili's Ranch Dressing (1.5 oz)", src: "Chili's", grams: 43, cal: 170, pro: 1, carb: 2, fat: 18, unit: "order", tags: "chilis sauce dip" },
+      { id: "chili132", emoji: "🥫", name: "Chili's Buffalo Sauce (1.5 oz)", src: "Chili's", grams: 43, cal: 40, pro: 0, carb: 2, fat: 3, unit: "order", tags: "chilis dip" },
+      { id: "chili133", emoji: "🥫", name: "Chili's House BBQ Sauce (1.5 oz)", src: "Chili's", grams: 43, cal: 110, pro: 1, carb: 27, fat: 0, unit: "order", tags: "chilis dip" },
+      { id: "chili134", emoji: "🥫", name: "Chili's Honey Mustard (1.5 oz)", src: "Chili's", grams: 43, cal: 200, pro: 1, carb: 10, fat: 18, unit: "order", tags: "chilis sauce dip dressing" },
+      { id: "chili135", emoji: "🥫", name: "Chili's Avocado Ranch (1.5 oz)", src: "Chili's", grams: 43, cal: 130, pro: 1, carb: 3, fat: 14, unit: "order", tags: "chilis sauce dip dressing" },
+      { id: "chili136", emoji: "🥫", name: "Chili's Side Guacamole", src: "Chili's", grams: 65, cal: 160, pro: 2, carb: 9, fat: 14, unit: "order", tags: "chilis guac dip" },
+      { id: "chili137", emoji: "🥫", name: "Chili's Side Southwestern Queso", src: "Chili's", grams: 90, cal: 230, pro: 10, carb: 6, fat: 19, unit: "order", tags: "chilis cheese dip" },
+      { id: "chili138", emoji: "🍰", name: "Chili's Molten Chocolate Cake", src: "Chili's", grams: 315, cal: 1140, pro: 13, carb: 147, fat: 57, unit: "order", tags: "chilis lava" },
+      { id: "chili139", emoji: "🍰", name: "Chili's Skillet Chocolate Chip Cookie", src: "Chili's", grams: 335, cal: 1210, pro: 17, carb: 174, fat: 49, unit: "order", tags: "chilis" },
+      { id: "chili140", emoji: "🍰", name: "Chili's Classic Cheesecake", src: "Chili's", grams: 240, cal: 870, pro: 11, carb: 71, fat: 60, unit: "order", tags: "chilis" },
+      { id: "chili141", emoji: "🍰", name: "Chili's Peanut Butter Pie", src: "Chili's", grams: 255, cal: 920, pro: 13, carb: 81, fat: 65, unit: "order", tags: "chilis" }
     ];
 
     // Query words that mean the same thing (left side typed → right side searched)
-    const SYNONYMS = { canes: "cane", cane: "cane", chx: "chicken", chikn: "chicken", cfa: "chickfila", jitb: "jackinthebox",
+    const SYNONYMS = { canes: "cane", cane: "cane", chx: "chicken", chikn: "chicken", cfa: "chickfila", chickfila: "chickfila", chilli: "chili", chillis: "chili", rib: "rib", ribs: "rib", babyback: "backrib", patty: "patty", patties: "patty", jitb: "jackinthebox",
       innout: "innout", tender: "finger", tenders: "finger", strip: "finger", strips: "finger", nugs: "nugget", pb: "peanut",
       fries: "fry", ff: "fry", shake: "shake", protien: "protein", whey: "whey", oj: "orange", gb: "groundbeef" };
 
-    // Online food databases. Personal USDA FoodData Central key (about 1,000 searches/hour).
-    // If it ever stops working, swap back to "DEMO_KEY" or get a new free key at
-    // https://fdc.nal.usda.gov/api-key-signup
-    const USDA_API_KEY = "gHNBNdjkCqp8DNjGjrqtQ6GMdmCzj9R8MFWh79nN";
 
     // FIX: use the phone's LOCAL date (toISOString() is UTC, so after 5pm in
     // California it was logging meals under tomorrow's date).
@@ -817,7 +1032,7 @@
       }
     }
 
-    // ---------- Online food databases: USDA FoodData Central + Open Food Facts ----------
+    // ---------- Online food database: Open Food Facts (no API key needed) ----------
     // Results use the package's own serving size (e.g. "1 stick", "1 scoop") when
     // the database has it. Type a barcode number (UPC) to look up an exact product.
     const round1 = n => Math.round((Number(n) || 0) * 10) / 10;
@@ -833,30 +1048,6 @@
         if (!res.ok) throw new Error("HTTP " + res.status);
         return await res.json();
       } finally { clearTimeout(timer); }
-    }
-
-    async function searchUSDA(q) {
-      // Survey (FNDDS) adds plain everyday foods ("chicken breast, grilled") next to packaged ones
-      const types = encodeURIComponent("Foundation,SR Legacy,Survey (FNDDS),Branded");
-      const data = await fetchJSON(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${USDA_API_KEY}&pageSize=40&dataType=${types}&query=${encodeURIComponent(q)}`);
-      return (data.foods || []).map(f => {
-        // USDA search values are per 100 g, so scale to the label serving
-        const per100 = id => (f.foodNutrients || []).find(n => n.nutrientId === id)?.value || 0;
-        const kcal = per100(1008) || per100(2047) || per100(2048);
-        const unit = String(f.servingSizeUnit || "").toLowerCase();
-        const hasServing = f.servingSize && ["g", "grm", "ml", "mlt"].includes(unit);
-        const grams = hasServing ? Math.round(f.servingSize) : 100;
-        const k = grams / 100;
-        const serving = f.householdServingFullText ? ` (${titleCase(f.householdServingFullText)})` : "";
-        const brand = f.brandName || (f.dataType === "Branded" ? f.brandOwner : "") || "";
-        return {
-          id: "usda_" + f.fdcId, emoji: "🇺🇸", src: f.dataType === "Branded" ? "USDA" : "USDA ✓",
-          generic: f.dataType !== "Branded", brand,
-          name: `${brand ? titleCase(brand) + " " : ""}${titleCase(f.description)}${serving}`,
-          grams, cal: Math.round(kcal * k), pro: round1(per100(1003) * k),
-          carb: round1(per100(1005) * k), fat: round1(per100(1004) * k)
-        };
-      }).filter(x => x.cal > 0);
     }
 
     function fromOFF(p) {
@@ -942,16 +1133,12 @@
       renderRecents(false);
       const local = localMatches(q).slice(0, 6);
       const head = local.length ? [{ divider: "⭐ In your vault" }, ...local] : [];
-      renderFoodGrid([...head, { divider: "🔎 Searching USDA & Open Food Facts..." }]);
-      const [usda, off] = await Promise.allSettled([searchUSDA(q), searchOFF(q)]);
+      renderFoodGrid([...head, { divider: "🔎 Searching Open Food Facts..." }]);
+      const [off] = await Promise.allSettled([searchOFF(q)]);
       if (my !== searchSeq) return; // you typed something new meanwhile
-      const results = rankOnline(q, [
-        ...(usda.status === "fulfilled" ? usda.value : []),
-        ...(off.status === "fulfilled" ? off.value : [])
-      ]);
+      const results = rankOnline(q, off.status === "fulfilled" ? off.value : []);
       const failed = [];
-      if (usda.status === "rejected") failed.push(String(usda.reason).includes("limit") ? "USDA hit its hourly limit" : "USDA didn't respond");
-      if (off.status === "rejected" && (!results.length || usda.status === "rejected")) failed.push("Open Food Facts search is down on their end (barcodes still work)");
+      if (off.status === "rejected") failed.push("Open Food Facts search is down on their end (barcodes still work)");
       const items = [...head, { divider: "🌐 Online" }, ...results];
       if (failed.length) items.push({ divider: "ⓘ " + failed.join(" • "), cls: "text-slate-500 font-normal text-center" });
       if (!results.length) items.splice(items.length - (failed.length ? 1 : 0), 0, { divider: `No online results for "${esc(q)}"`, cls: "text-slate-400 font-normal" });
