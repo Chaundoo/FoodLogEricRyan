@@ -389,6 +389,20 @@
       { id: "f19", emoji: "💪", name: "Super Advanced Whey Protein (2 Scoops, 12g BCAA)", src: "Label", grams: 90, cal: 360, pro: 60, carb: 14, fat: 8 },
       { id: "f20", emoji: "🥬", name: "Bok Choy / Baby Bok Choy (Cooked)", src: "USDA", grams: 100, cal: 12, pro: 1.6, carb: 1.8, fat: 0.2 },
       { id: "f21", emoji: "🐖", name: "Ground Pork (Cooked)", src: "USDA", grams: 100, cal: 297, pro: 25.7, carb: 0, fat: 20.8 },
+      // Costco / Kirkland Signature — package label numbers (double-check your package; recipes change)
+      { id: "ks1", emoji: "🌭", name: "Kirkland Mild Italian Sausage (1 Link, Cooked)", src: "Kirkland", grams: 85, cal: 250, pro: 17, carb: 1, fat: 20, unit: "link", tags: "costco kirkland ks pork sausage" },
+      { id: "ks2", emoji: "🍗", name: "Kirkland Rotisserie Chicken (3 oz)", src: "Kirkland", grams: 85, cal: 140, pro: 19, carb: 0, fat: 8, tags: "costco kirkland ks rotisserie chicken" },
+      { id: "ks3", emoji: "🥩", name: "Kirkland Lean Ground Beef 88/12 (4 oz Raw)", src: "Kirkland", grams: 112, cal: 210, pro: 21, carb: 0, fat: 14, tags: "costco kirkland ks ground beef groundbeef hamburger" },
+      { id: "ks4", emoji: "🍗", name: "Kirkland Boneless Skinless Chicken Breast (4 oz Raw)", src: "Kirkland", grams: 112, cal: 110, pro: 23, carb: 0, fat: 1.5, tags: "costco kirkland ks frozen chicken breast" },
+      { id: "ks5", emoji: "🐟", name: "Kirkland Atlantic Salmon Fillet (4 oz Raw)", src: "Kirkland", grams: 112, cal: 230, pro: 23, carb: 0, fat: 15, tags: "costco kirkland ks salmon fish" },
+      { id: "ks6", emoji: "🥤", name: "Kirkland Protein Shake (1 Bottle)", src: "Kirkland", grams: 325, cal: 160, pro: 30, carb: 5, fat: 3.5, unit: "bottle", tags: "costco kirkland ks protein shake drink" },
+      { id: "ks7", emoji: "🍫", name: "Kirkland Protein Bar (1 Bar)", src: "Kirkland", grams: 60, cal: 190, pro: 21, carb: 22, fat: 7, unit: "bar", tags: "costco kirkland ks protein bar" },
+      { id: "ks8", emoji: "🥜", name: "Kirkland Whole Almonds (1 oz)", src: "Kirkland", grams: 28, cal: 170, pro: 6, carb: 6, fat: 15, tags: "costco kirkland ks almond nut snack" },
+      { id: "ks9", emoji: "🥜", name: "Kirkland Organic Peanut Butter (2 Tbsp)", src: "Kirkland", grams: 32, cal: 190, pro: 7, carb: 7, fat: 16, tags: "costco kirkland ks peanut butter pb" },
+      { id: "ks10", emoji: "🥛", name: "Kirkland Organic Whole Milk (1 Cup)", src: "Kirkland", grams: 240, cal: 150, pro: 8, carb: 12, fat: 8, tags: "costco kirkland ks milk" },
+      { id: "ks11", emoji: "🥚", name: "Kirkland Large Egg (1 Egg)", src: "Kirkland", grams: 50, cal: 70, pro: 6, carb: 0, fat: 5, unit: "egg", tags: "costco kirkland ks egg" },
+      // Hmong sausage — homemade/store recipes vary (pork, lemongrass, chili); estimated from USDA cooked pork sausage
+      { id: "hm1", emoji: "🌭", name: "Hmong Sausage (1 Link, Cooked)", src: "Estimate", grams: 100, cal: 300, pro: 18, carb: 2, fat: 24, unit: "link", tags: "hmong sausage pork lemongrass nqaij npuas" },
       // Raising Cane's — official allergen & nutrition sheet (raisingcanes.com/allergens). Combos exclude the drink.
       { id: "rc1", emoji: "🍗", name: "Raising Cane's Chicken Finger (1 Finger)", src: "Cane's", grams: 55, cal: 130, pro: 12, carb: 5, fat: 6, tags: "tender strip" },
       { id: "rc2", emoji: "🍟", name: "Raising Cane's Crinkle-Cut Fries", src: "Cane's", grams: 144, cal: 420, pro: 5, carb: 53, fat: 21, tags: "fry" },
@@ -623,7 +637,7 @@
     // Query words that mean the same thing (left side typed → right side searched)
     const SYNONYMS = { canes: "cane", cane: "cane", chx: "chicken", chikn: "chicken", cfa: "chickfila", chickfila: "chickfila", chilli: "chili", chillis: "chili", rib: "rib", ribs: "rib", babyback: "backrib", patty: "patty", patties: "patty", jitb: "jackinthebox",
       innout: "innout", tender: "finger", tenders: "finger", strip: "finger", strips: "finger", nugs: "nugget", pb: "peanut",
-      fries: "fry", ff: "fry", shake: "shake", protien: "protein", whey: "whey", oj: "orange", gb: "groundbeef" };
+      fries: "fry", ff: "fry", shake: "shake", protien: "protein", whey: "whey", oj: "orange", gb: "groundbeef", ks: "kirkland", costco: "costco", sausages: "sausage" };
 
 
     // FIX: use the phone's LOCAL date (toISOString() is UTC, so after 5pm in
