@@ -401,6 +401,24 @@
       { id: "ks9", emoji: "🥜", name: "Kirkland Organic Peanut Butter (2 Tbsp)", src: "Kirkland", grams: 32, cal: 190, pro: 7, carb: 7, fat: 16, tags: "costco kirkland ks peanut butter pb" },
       { id: "ks10", emoji: "🥛", name: "Kirkland Organic Whole Milk (1 Cup)", src: "Kirkland", grams: 240, cal: 150, pro: 8, carb: 12, fat: 8, tags: "costco kirkland ks milk" },
       { id: "ks11", emoji: "🥚", name: "Kirkland Large Egg (1 Egg)", src: "Kirkland", grams: 50, cal: 70, pro: 6, carb: 0, fat: 5, unit: "egg", tags: "costco kirkland ks egg" },
+      // Foster Farms — fosterfarms.com product labels (grilled strips & corn dog from CalorieKing/MyFoodData)
+      { id: "ff1", emoji: "🍗", name: "Foster Farms Take Out Classic Buffalo Crispy Wings (2 Wings)", src: "Foster Farms", grams: 84, cal: 150, pro: 12, carb: 4, fat: 9, unit: "wings", tags: "foster farms fosterfarms ff chicken wing buffalo frozen takeout" },
+      { id: "ff2", emoji: "🍗", name: "Foster Farms Take Out Honey BBQ Crispy Wings (2 Wings)", src: "Foster Farms", grams: 84, cal: 150, pro: 12, carb: 4, fat: 9, unit: "wings", tags: "foster farms fosterfarms ff chicken wing bbq honey frozen takeout" },
+      { id: "ff3", emoji: "🍗", name: "Foster Farms Take Out Sweet Chipotle Crispy Wings (2 Wings)", src: "Foster Farms", grams: 84, cal: 150, pro: 12, carb: 4, fat: 9, unit: "wings", tags: "foster farms fosterfarms ff chicken wing chipotle frozen takeout" },
+      { id: "ff4", emoji: "🍗", name: "Foster Farms Honey BBQ Chicken Wings (3 oz)", src: "Foster Farms", grams: 84, cal: 170, pro: 12, carb: 6, fat: 11, tags: "foster farms fosterfarms ff chicken wing bbq honey frozen" },
+      { id: "ff5", emoji: "🌶️", name: "Foster Farms Hot & Spicy Chicken Wings (3 oz)", src: "Foster Farms", grams: 84, cal: 170, pro: 11, carb: 3, fat: 13, tags: "foster farms fosterfarms ff chicken wing hot spicy frozen" },
+      { id: "ff6", emoji: "🍗", name: "Foster Farms Uncooked Party Wings (4 oz Raw)", src: "Foster Farms", grams: 112, cal: 190, pro: 17, carb: 0, fat: 13, tags: "foster farms fosterfarms ff chicken wing party raw air fryer" },
+      { id: "ff7", emoji: "🍗", name: "Foster Farms Buffalo Boneless Wyngz (3 oz)", src: "Foster Farms", grams: 84, cal: 190, pro: 14, carb: 15, fat: 8, tags: "foster farms fosterfarms ff chicken wing boneless wyngz buffalo frozen" },
+      { id: "ff8", emoji: "🍗", name: "Foster Farms Mild Buffalo Crispy Bites (3 oz)", src: "Foster Farms", grams: 84, cal: 150, pro: 13, carb: 10, fat: 6, tags: "foster farms fosterfarms ff chicken bites buffalo frozen takeout" },
+      { id: "ff9", emoji: "🍗", name: "Foster Farms Honey BBQ Crispy Bites (3 oz)", src: "Foster Farms", grams: 84, cal: 150, pro: 13, carb: 10, fat: 6, tags: "foster farms fosterfarms ff chicken bites bbq honey frozen takeout" },
+      { id: "ff10", emoji: "🍗", name: "Foster Farms Crispy Chicken Strips (3 oz)", src: "Foster Farms", grams: 84, cal: 170, pro: 13, carb: 17, fat: 8, tags: "foster farms fosterfarms ff chicken strip tender finger frozen" },
+      { id: "ff11", emoji: "🍗", name: "Foster Farms Buffalo Crispy Chicken Strips (3 oz)", src: "Foster Farms", grams: 84, cal: 180, pro: 11, carb: 16, fat: 8, tags: "foster farms fosterfarms ff chicken strip tender finger buffalo frozen" },
+      { id: "ff12", emoji: "🍗", name: "Foster Farms Grilled Chicken Breast Strips (3 oz)", src: "Foster Farms", grams: 84, cal: 110, pro: 19, carb: 2, fat: 2.5, tags: "foster farms fosterfarms ff chicken strip grilled breast fully cooked" },
+      { id: "ff13", emoji: "🍗", name: "Foster Farms Chicken Nuggets (4 Nuggets)", src: "Foster Farms", grams: 80, cal: 220, pro: 9, carb: 15, fat: 15, unit: "serving", tags: "foster farms fosterfarms ff chicken nugget nugs frozen" },
+      { id: "ff14", emoji: "🌶️", name: "Foster Farms Spicy Chicken Nuggets (4 Nuggets)", src: "Foster Farms", grams: 80, cal: 190, pro: 10, carb: 12, fat: 11, unit: "serving", tags: "foster farms fosterfarms ff chicken nugget nugs spicy frozen" },
+      { id: "ff15", emoji: "🍿", name: "Foster Farms Popcorn Chicken (3 oz)", src: "Foster Farms", grams: 84, cal: 190, pro: 12, carb: 15, fat: 9, tags: "foster farms fosterfarms ff chicken popcorn bites frozen" },
+      { id: "ff16", emoji: "🍗", name: "Foster Farms Breast Tenders, Uncooked (4 oz Raw)", src: "Foster Farms", grams: 112, cal: 100, pro: 21, carb: 0, fat: 1, tags: "foster farms fosterfarms ff chicken tender breast raw frozen" },
+      { id: "ff17", emoji: "🌭", name: "Foster Farms Corn Dog (1 Corn Dog)", src: "Foster Farms", grams: 75, cal: 190, pro: 7, carb: 21, fat: 9, unit: "corn dog", tags: "foster farms fosterfarms ff chicken corndog hot dog frozen" },
       // Hmong sausage — homemade/store recipes vary (pork, lemongrass, chili); estimated from USDA cooked pork sausage
       { id: "hm1", emoji: "🌭", name: "Hmong Sausage (1 Link, Cooked)", src: "Estimate", grams: 100, cal: 300, pro: 18, carb: 2, fat: 24, unit: "link", tags: "hmong sausage pork lemongrass nqaij npuas" },
       // Raising Cane's — official allergen & nutrition sheet (raisingcanes.com/allergens). Combos exclude the drink.
@@ -637,7 +655,7 @@
     // Query words that mean the same thing (left side typed → right side searched)
     const SYNONYMS = { canes: "cane", cane: "cane", chx: "chicken", chikn: "chicken", cfa: "chickfila", chickfila: "chickfila", chilli: "chili", chillis: "chili", rib: "rib", ribs: "rib", babyback: "backrib", patty: "patty", patties: "patty", jitb: "jackinthebox",
       innout: "innout", tender: "finger", tenders: "finger", strip: "finger", strips: "finger", nugs: "nugget", pb: "peanut",
-      fries: "fry", ff: "fry", shake: "shake", protien: "protein", whey: "whey", oj: "orange", gb: "groundbeef", ks: "kirkland", costco: "costco", sausages: "sausage" };
+      fries: "fry", ff: "fry", shake: "shake", protien: "protein", whey: "whey", oj: "orange", gb: "groundbeef", ks: "kirkland", fosterfarm: "foster", wyngz: "wing", wingz: "wing", corndog: "corndog", costco: "costco", sausages: "sausage" };
 
 
     // FIX: use the phone's LOCAL date (toISOString() is UTC, so after 5pm in
